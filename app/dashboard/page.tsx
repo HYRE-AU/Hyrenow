@@ -46,65 +46,80 @@ export default function DashboardPage() {
     async function getUser() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (!user) {
         router.push('/login')
         return
       }
-      
+
       setUser(user)
       fetchData(user.id)
     }
-    
+
     getUser()
   }, [router])
 
   async function fetchData(userId: string) {
-    const supabase = createClient()
-    
-    // Get user's org_id
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('org_id')
-      .eq('id', userId)
-      .single()
+    try {
+      const supabase = createClient()
 
-    if (!profile) return
+      // Get user's org_id
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', userId)
+        .single()
 
-    // Fetch roles with count
-    const { data: rolesData, count: rolesCount } = await supabase
-      .from('roles')
-      .select('*', { count: 'exact' })
-      .eq('org_id', profile.org_id)
-      .order('created_at', { ascending: false })
-      .range((rolesPage - 1) * ITEMS_PER_PAGE, rolesPage * ITEMS_PER_PAGE - 1)
+      if (profileError) {
+        console.error('Profile error:', profileError)
+        setLoading(false)
+        return
+      }
 
-    // Fetch interviews with candidates and roles
-    const { data: interviewsData, count: interviewsCount } = await supabase
-      .from('interviews')
-      .select(`
-        id,
-        status,
-        created_at,
-        candidates (
+      if (!profile) {
+        console.error('No profile found for user')
+        setLoading(false)
+        return
+      }
+
+      // Fetch roles with count
+      const { data: rolesData, count: rolesCount } = await supabase
+        .from('roles')
+        .select('*', { count: 'exact' })
+        .eq('org_id', profile.org_id)
+        .order('created_at', { ascending: false })
+        .range((rolesPage - 1) * ITEMS_PER_PAGE, rolesPage * ITEMS_PER_PAGE - 1)
+
+      // Fetch interviews with candidates and roles
+      const { data: interviewsData, count: interviewsCount } = await supabase
+        .from('interviews')
+        .select(`
           id,
-          name,
-          email
-        ),
-        roles (
-          id,
-          title
-        )
-      `, { count: 'exact' })
-      .eq('org_id', profile.org_id)
-      .order('created_at', { ascending: false })
-      .range((interviewsPage - 1) * ITEMS_PER_PAGE, interviewsPage * ITEMS_PER_PAGE - 1)
+          status,
+          created_at,
+          candidates (
+            id,
+            name,
+            email
+          ),
+          roles (
+            id,
+            title
+          )
+        `, { count: 'exact' })
+        .eq('org_id', profile.org_id)
+        .order('created_at', { ascending: false })
+        .range((interviewsPage - 1) * ITEMS_PER_PAGE, interviewsPage * ITEMS_PER_PAGE - 1)
 
-    setRoles(rolesData || [])
-    setInterviews((interviewsData as any) || [])
-    setTotalRoles(rolesCount || 0)
-    setTotalInterviews(interviewsCount || 0)
-    setLoading(false)
+      setRoles(rolesData || [])
+      setInterviews((interviewsData as any) || [])
+      setTotalRoles(rolesCount || 0)
+      setTotalInterviews(interviewsCount || 0)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -293,11 +308,17 @@ export default function DashboardPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {interviews.map((interview) => (
-                        <tr key={interview.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                        <tr key={interview.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4">
                             <button
-                              onClick={() => interview.candidates && router.push(`/dashboard/candidates/${interview.candidates.id}`)}
-                              className="font-medium text-gray-900 hover:text-indigo-600 transition-colors text-left"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (interview.candidates) {
+                                  router.push(`/dashboard/candidates/${interview.candidates.id}`)
+                                }
+                              }}
+                              className="font-medium text-gray-900 hover:text-indigo-600 transition-colors text-left cursor-pointer"
+                              type="button"
                             >
                               {interview.candidates?.name || 'Unknown'}
                             </button>

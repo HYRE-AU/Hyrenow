@@ -37,45 +37,51 @@ export default function CandidateProfilePage() {
 
   useEffect(() => {
     async function fetchData() {
-      const supabase = createClient()
-      
-      const { data: candidateData, error: candidateError } = await supabase
-        .from('candidates')
-        .select('*')
-        .eq('id', candidateId)
-        .single()
+      try {
+        const supabase = createClient()
 
-      if (candidateError) {
-        console.error('Error fetching candidate:', candidateError)
-        return
-      }
+        const { data: candidateData, error: candidateError } = await supabase
+          .from('candidates')
+          .select('*')
+          .eq('id', candidateId)
+          .single()
 
-      const { data: interviewsData, error: interviewsError } = await supabase
-        .from('interviews')
-        .select(`
-          id,
-          status,
-          created_at,
-          slug,
-          started_at,
-          completed_at,
-          score,
-          evaluation,
-          roles (
+        if (candidateError) {
+          console.error('Error fetching candidate:', candidateError)
+          setLoading(false)
+          return
+        }
+
+        const { data: interviewsData, error: interviewsError } = await supabase
+          .from('interviews')
+          .select(`
             id,
-            title
-          )
-        `)
-        .eq('candidate_id', candidateId)
-        .order('created_at', { ascending: false })
+            status,
+            created_at,
+            slug,
+            started_at,
+            completed_at,
+            score,
+            evaluation,
+            roles (
+              id,
+              title
+            )
+          `)
+          .eq('candidate_id', candidateId)
+          .order('created_at', { ascending: false })
 
-      if (interviewsError) {
-        console.error('Error fetching interviews:', interviewsError)
+        if (interviewsError) {
+          console.error('Error fetching interviews:', interviewsError)
+        }
+
+        setCandidate(candidateData)
+        setInterviews((interviewsData as any) || [])
+      } catch (error) {
+        console.error('Error in fetchData:', error)
+      } finally {
+        setLoading(false)
       }
-
-      setCandidate(candidateData)
-      setInterviews((interviewsData as any) || [])
-      setLoading(false)
     }
 
     fetchData()
