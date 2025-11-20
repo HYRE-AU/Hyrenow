@@ -67,7 +67,7 @@ export default function DashboardPage() {
             You're successfully logged in.
           </p>
           
-          <div className="bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl p-6 border border-indigo-100">
+          <div className="bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl p-6 border border-indigo-100 mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Account</h3>
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
@@ -79,13 +79,26 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              🚀 Next Steps
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              🚀 Get Started
             </h3>
-            <p className="text-gray-600">
-              Your authentication is working perfectly! Next we'll build the interview features.
-            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <button
+                onClick={() => router.push('/dashboard/roles/new')}
+                className="p-6 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 text-left"
+              >
+                <div className="text-2xl mb-2">📝</div>
+                <h4 className="font-semibold text-lg mb-1">Create New Role</h4>
+                <p className="text-indigo-100 text-sm">Add a job description and generate interview questions</p>
+              </button>
+
+              <div className="p-6 bg-gray-100 rounded-xl text-left opacity-50 cursor-not-allowed">
+                <div className="text-2xl mb-2">👥</div>
+                <h4 className="font-semibold text-lg mb-1 text-gray-700">View Candidates</h4>
+                <p className="text-gray-500 text-sm">Coming soon...</p>
+              </div>
+            </div>
           </div>
         </div>
       </main>
