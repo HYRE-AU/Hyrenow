@@ -24,7 +24,7 @@ type Interview = {
   roles: {
     id: string
     title: string
-  }
+  } | null
 }
 
 export default function CandidateProfilePage() {
@@ -74,7 +74,7 @@ export default function CandidateProfilePage() {
       }
 
       setCandidate(candidateData)
-      setInterviews(interviewsData || [])
+      setInterviews((interviewsData as any) || [])
       setLoading(false)
     }
 
@@ -179,7 +179,7 @@ export default function CandidateProfilePage() {
                     <p className="font-medium text-gray-900 text-sm">Resume.pdf</p>
                     <p className="text-xs text-gray-600">Uploaded</p>
                   </div>
-                  
+                  <a
                     href={candidate.cv_url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -223,10 +223,10 @@ export default function CandidateProfilePage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <button
-                              onClick={() => router.push(`/dashboard/roles/${interview.roles.id}`)}
+                              onClick={() => interview.roles && router.push(`/dashboard/roles/${interview.roles.id}`)}
                               className="text-xl font-bold text-gray-900 hover:text-indigo-600 transition-colors"
                             >
-                              {interview.roles.title}
+                              {interview.roles?.title || 'Unknown Role'}
                             </button>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(interview.status)}`}>
                               {getStatusIcon(interview.status)} {interview.status}

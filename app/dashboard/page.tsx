@@ -22,11 +22,11 @@ type Interview = {
     id: string
     name: string
     email: string
-  }
+  } | null
   roles: {
     id: string
     title: string
-  }
+  } | null
 }
 
 export default function DashboardPage() {
@@ -101,7 +101,7 @@ export default function DashboardPage() {
       .range((interviewsPage - 1) * ITEMS_PER_PAGE, interviewsPage * ITEMS_PER_PAGE - 1)
 
     setRoles(rolesData || [])
-    setInterviews(interviewsData || [])
+    setInterviews((interviewsData as any) || [])
     setTotalRoles(rolesCount || 0)
     setTotalInterviews(interviewsCount || 0)
     setLoading(false)
@@ -293,21 +293,24 @@ export default function DashboardPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {interviews.map((interview) => (
-                        <tr key={interview.id} className="hover:bg-gray-50 transition-colors">
+                        <tr key={interview.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
                           <td className="px-6 py-4">
-                            <div className="font-medium text-gray-900">
-                              {interview.candidates.name}
-                            </div>
+                            <button
+                              onClick={() => interview.candidates && router.push(`/dashboard/candidates/${interview.candidates.id}`)}
+                              className="font-medium text-gray-900 hover:text-indigo-600 transition-colors text-left"
+                            >
+                              {interview.candidates?.name || 'Unknown'}
+                            </button>
                           </td>
                           <td className="px-6 py-4 text-gray-600">
-                            {interview.candidates.email}
+                            {interview.candidates?.email || 'N/A'}
                           </td>
                           <td className="px-6 py-4">
                             <button
-                              onClick={() => router.push(`/dashboard/roles/${interview.roles.id}`)}
+                              onClick={() => interview.roles && router.push(`/dashboard/roles/${interview.roles.id}`)}
                               className="text-indigo-600 hover:text-indigo-700 font-medium"
                             >
-                              {interview.roles.title}
+                              {interview.roles?.title || 'Unknown Role'}
                             </button>
                           </td>
                           <td className="px-6 py-4">

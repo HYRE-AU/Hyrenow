@@ -12,7 +12,7 @@ type Interview = {
     id: string
     name: string
     email: string
-  }
+  } | null
 }
 
 type Role = {
@@ -56,7 +56,7 @@ export default function RoleCandidatesPage() {
         .order('created_at', { ascending: false })
 
       setRole(roleData)
-      setInterviews(interviewsData || [])
+      setInterviews((interviewsData as any) || [])
       setLoading(false)
     }
 
@@ -148,11 +148,11 @@ export default function RoleCandidatesPage() {
                     <tr key={interview.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-medium text-gray-900">
-                          {interview.candidates.name}
+                          {interview.candidates?.name || 'Unknown'}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-gray-600">
-                        {interview.candidates.email}
+                        {interview.candidates?.email || 'N/A'}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(interview.status)}`}>
@@ -164,7 +164,7 @@ export default function RoleCandidatesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <button
-                          onClick={() => router.push(`/dashboard/candidates/${interview.candidates.id}`)}
+                          onClick={() => interview.candidates && router.push(`/dashboard/candidates/${interview.candidates.id}`)}
                           className="text-indigo-600 hover:text-indigo-700 font-medium"
                         >
                           View Profile →
