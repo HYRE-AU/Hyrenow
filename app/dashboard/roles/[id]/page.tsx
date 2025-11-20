@@ -198,6 +198,12 @@ export default function RoleDetailPage() {
                 >
                   📧 Invite Candidate
                 </button>
+                <button
+                  onClick={() => router.push(`/dashboard/roles/${roleId}/candidates`)}
+                  className="w-full bg-white border-2 border-indigo-600 text-indigo-600 py-3 rounded-xl font-semibold hover:bg-indigo-50 transition-all duration-200"
+                >
+                  👥 View Candidates
+                </button>
               </div>
             </div>
 
