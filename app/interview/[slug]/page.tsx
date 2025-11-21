@@ -104,27 +104,49 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   useEffect(() => {
     if (!vapi) return
 
-    vapi.on('call-start', () => {
+    vapi.on('call-start', async () => {
       console.log('Call started')
       setCallState('active')
+
+      // Update interview status to in_progress
+      try {
+        await fetch('/api/interview/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug })
+        })
+      } catch (err) {
+        console.error('Failed to update interview start status:', err)
+      }
     })
 
     vapi.on('call-end', (async (callData: any) => {
-      console.log('Call ended', callData)
+      console.log('Call ended - Full callData:', JSON.stringify(callData, null, 2))
       setCallState('ended')
 
-      // Get transcript and send to completion endpoint
-      const transcript = callData?.transcript || 'Transcript not available'
-
-      await fetch('/api/interview/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug,
-          transcript: typeof transcript === 'string' ? transcript : JSON.stringify(transcript),
-          vapiCallId: callData?.callId
+      // Send call completion to backend - transcript will be fetched from Vapi's API
+      try {
+        const response = await fetch('/api/interview/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug,
+            vapiCallId: callData?.id || callData?.callId
+          })
         })
-      })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          console.error('Failed to complete interview:', result.error)
+          setError(`Failed to save interview results: ${result.error}`)
+        } else {
+          console.log('Interview completed successfully:', result)
+        }
+      } catch (err: any) {
+        console.error('Error completing interview:', err)
+        setError(`Failed to save interview results: ${err.message}`)
+      }
     }) as any)
 
     vapi.on('error', (error) => {

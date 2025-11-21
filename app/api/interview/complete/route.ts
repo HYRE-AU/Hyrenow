@@ -8,7 +8,46 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
   try {
-    const { slug, transcript, vapiCallId } = await request.json()
+    const { slug, vapiCallId } = await request.json()
+
+    console.log('Interview completion request:', { slug, vapiCallId })
+
+    // Fetch transcript from Vapi API if we have a call ID
+    let transcript = 'Transcript not available'
+    if (vapiCallId) {
+      try {
+        console.log('Fetching transcript from Vapi for call:', vapiCallId)
+        const vapiResponse = await fetch(`https://api.vapi.ai/call/${vapiCallId}`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.VAPI_PRIVATE_KEY}`
+          }
+        })
+
+        if (vapiResponse.ok) {
+          const callData = await vapiResponse.json()
+          console.log('Vapi call data received')
+
+          // Extract transcript from Vapi's response
+          if (callData.artifact?.messages) {
+            transcript = callData.artifact.messages
+              .map((msg: any) => `${msg.role}: ${msg.content || msg.message}`)
+              .join('\n\n')
+          } else if (callData.messages) {
+            transcript = callData.messages
+              .map((msg: any) => `${msg.role}: ${msg.content || msg.message}`)
+              .join('\n\n')
+          } else if (callData.transcript) {
+            transcript = callData.transcript
+          }
+
+          console.log('Extracted transcript length:', transcript.length)
+        } else {
+          console.error('Failed to fetch from Vapi:', vapiResponse.status)
+        }
+      } catch (vapiError) {
+        console.error('Error fetching transcript from Vapi:', vapiError)
+      }
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,21 +91,33 @@ Job Description: ${(interview.roles as any)?.jd_text || 'N/A'}
 Questions Asked:
 ${questions?.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}
 
-Analyze the transcript and provide:
-1. An overall score from 0-100
-2. A detailed evaluation covering:
-   - Communication skills
-   - Relevant experience
-   - Technical knowledge
-   - Cultural fit
-   - Strengths
-   - Areas for improvement
+Analyze the transcript and provide a structured evaluation.
 
 Return ONLY a JSON object in this exact format (no markdown, no extra text):
 {
   "score": <number 0-100>,
-  "evaluation": "<detailed multi-paragraph evaluation>"
-}`,
+  "recommendation": "<strong yes|yes|no|strong no>",
+  "reasons_to_proceed": [
+    "<bullet point 1>",
+    "<bullet point 2>"
+  ],
+  "flags_risks": [
+    "<concern 1>",
+    "<concern 2>"
+  ],
+  "question_evaluations": [
+    {
+      "question": "<question text>",
+      "evaluation": "<2-3 sentence summary of performance>"
+    }
+  ]
+}
+
+IMPORTANT:
+- recommendation must be exactly one of: "strong yes", "yes", "no", "strong no"
+- reasons_to_proceed: maximum 5 clear, specific points
+- flags_risks: only include genuine concerns, can be empty array [] if none
+- question_evaluations: one entry per question with concise performance summary`,
         },
         {
           role: 'user',
@@ -81,7 +132,13 @@ Return ONLY a JSON object in this exact format (no markdown, no extra text):
 
     // Parse the evaluation
     const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const { score, evaluation: evaluationText } = JSON.parse(cleanContent)
+    console.log('OpenAI response received')
+
+    const evaluationData = JSON.parse(cleanContent)
+    console.log('Parsed evaluation:', { 
+      score: evaluationData.score, 
+      recommendation: evaluationData.recommendation 
+    })
 
     // Update interview in database
     const { error: updateError } = await supabase
@@ -89,19 +146,24 @@ Return ONLY a JSON object in this exact format (no markdown, no extra text):
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
-        transcript,
-        score,
-        evaluation: evaluationText,
+        transcript: { text: transcript },
+        score: evaluationData.score,
+        recommendation: evaluationData.recommendation,
+        structured_evaluation: evaluationData,
         vapi_call_id: vapiCallId,
       })
       .eq('slug', slug)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Database update error:', updateError)
+      throw updateError
+    }
 
-    return NextResponse.json({ 
-      success: true, 
-      score, 
-      evaluation: evaluationText 
+    console.log('Interview completed successfully for slug:', slug)
+
+    return NextResponse.json({
+      success: true,
+      ...evaluationData
     })
   } catch (error: any) {
     console.error('Interview completion error:', error)
