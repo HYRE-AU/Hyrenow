@@ -19,11 +19,15 @@ export async function GET(
         id,
         status,
         slug,
-        role:roles (
+        roles (
           id,
-          title
+          title,
+          jd_text,
+          organisations (
+            name
+          )
         ),
-        candidate:candidates (
+        candidates (
           name,
           email
         )
@@ -34,7 +38,7 @@ export async function GET(
     if (error || !interview) throw error
 
     // Fetch questions for this role
-    const roleId = (interview as any).role?.id
+    const roleId = (interview as any).roles?.id
     const { data: questions } = await supabase
       .from('questions')
       .select('text, order_index')
