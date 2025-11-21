@@ -12,7 +12,10 @@ export async function POST(request: Request) {
 
     const { error } = await supabase
       .from('interviews')
-      .update({ status: 'progressed' })
+      .update({
+        status: 'progressed',
+        progressed_at: new Date().toISOString()
+      })
       .eq('id', interviewId)
 
     if (error) throw error

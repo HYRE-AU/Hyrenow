@@ -23,35 +23,39 @@ export async function POST(request: Request) {
       .single()
 
     // Generate personalized rejection reason using AI
-    let rejectionReason = ''
+    let rejectionReason = 'We felt other candidates were a closer match for this particular role.'
+    
     if (interview?.structured_evaluation || interview?.recommendation) {
-      const evaluationContext = interview.structured_evaluation 
-        ? JSON.stringify(interview.structured_evaluation)
-        : interview.recommendation
+      try {
+        const evaluationContext = interview.structured_evaluation 
+          ? JSON.stringify(interview.structured_evaluation)
+          : interview.recommendation
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `Generate a single professional sentence explaining why a candidate wasn't selected, based on their interview evaluation. Be tactful, constructive, and brief. Do not use negative language - focus on "fit" and "current needs" rather than deficiencies.`
-          },
-          {
-            role: 'user',
-            content: `Interview evaluation: ${evaluationContext}\n\nGenerate ONE tactful sentence for why this candidate wasn't selected.`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 100
-      })
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `Generate a single professional sentence explaining why a candidate wasn't selected, based on their interview evaluation. Be tactful, constructive, and brief. Focus on "fit" and "current needs" rather than deficiencies. Keep it under 25 words.`
+            },
+            {
+              role: 'user',
+              content: `Interview evaluation: ${evaluationContext}\n\nGenerate ONE tactful sentence for why this candidate wasn't selected.`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 100
+        })
 
-      rejectionReason = completion.choices[0].message.content?.trim() || 'We felt other candidates were a closer match for this particular role.'
-    } else {
-      rejectionReason = 'We felt other candidates were a closer match for this particular role.'
+        rejectionReason = completion.choices[0].message.content?.trim() || rejectionReason
+      } catch (aiError) {
+        console.error('AI generation failed, using default reason:', aiError)
+      }
     }
 
     // Create email body
-    const emailBody = `Hi ${candidateName.split(' ')[0]},
+    const firstName = candidateName.split(' ')[0]
+    const emailBody = `Hi ${firstName},
 
 Thanks again for taking the time to interview for the ${roleTitle} position and for your interest in ${companyName}.
 
@@ -65,7 +69,10 @@ The ${companyName} Team`
     // Update interview status
     await supabase
       .from('interviews')
-      .update({ status: 'rejected' })
+      .update({
+        status: 'rejected',
+        rejected_at: new Date().toISOString()
+      })
       .eq('id', interviewId)
 
     return NextResponse.json({ 

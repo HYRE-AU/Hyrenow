@@ -19,6 +19,8 @@ type Interview = {
   slug: string
   started_at: string | null
   completed_at: string | null
+  progressed_at: string | null
+  rejected_at: string | null
   score: number | null
   recommendation: string | null
   structured_evaluation: any | null
@@ -68,6 +70,8 @@ export default function CandidateProfilePage() {
             slug,
             started_at,
             completed_at,
+            progressed_at,
+            rejected_at,
             score,
             recommendation,
             structured_evaluation,
@@ -115,6 +119,31 @@ export default function CandidateProfilePage() {
     return `${mins}m ${secs}s`
   }
 
+  const getStatusDateInfo = (interview: Interview): { label: string; date: string } => {
+    switch (interview.status) {
+      case 'invited':
+        return { label: 'Invited on', date: interview.created_at }
+      case 'in_progress':
+        return interview.started_at
+          ? { label: 'Started on', date: interview.started_at }
+          : { label: 'Invited on', date: interview.created_at }
+      case 'completed':
+        return interview.completed_at
+          ? { label: 'Completed on', date: interview.completed_at }
+          : { label: 'Invited on', date: interview.created_at }
+      case 'progressed':
+        return interview.progressed_at
+          ? { label: 'Progressed on', date: interview.progressed_at }
+          : { label: 'Invited on', date: interview.created_at }
+      case 'rejected':
+        return interview.rejected_at
+          ? { label: 'Rejected on', date: interview.rejected_at }
+          : { label: 'Invited on', date: interview.created_at }
+      default:
+        return { label: 'Created on', date: interview.created_at }
+    }
+  }
+
   async function handleProceed(interview: Interview) {
     if (!confirm('Mark this candidate as progressed? This indicates you\'re moving forward with them.')) {
       return
@@ -131,8 +160,8 @@ export default function CandidateProfilePage() {
       if (!response.ok) throw new Error('Failed to update status')
 
       // Update local state
-      setInterviews(interviews.map(i => 
-        i.id === interview.id ? { ...i, status: 'progressed' } : i
+      setInterviews(interviews.map(i =>
+        i.id === interview.id ? { ...i, status: 'progressed', progressed_at: new Date().toISOString() } : i
       ))
 
       alert('✅ Candidate marked as progressed!')
@@ -167,8 +196,8 @@ export default function CandidateProfilePage() {
       const data = await response.json()
 
       // Update local state
-      setInterviews(interviews.map(i => 
-        i.id === interview.id ? { ...i, status: 'rejected' } : i
+      setInterviews(interviews.map(i =>
+        i.id === interview.id ? { ...i, status: 'rejected', rejected_at: new Date().toISOString() } : i
       ))
 
       // Open mailto link
@@ -349,7 +378,7 @@ export default function CandidateProfilePage() {
                               </span>
                             </div>
                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span>📅 {new Date(interview.created_at).toLocaleDateString()}</span>
+                              <span>📅 {getStatusDateInfo(interview).label} {new Date(getStatusDateInfo(interview).date).toLocaleDateString()}</span>
                               {interview.duration_seconds && (
                                 <span>⏱️ {formatDuration(interview.duration_seconds)}</span>
                               )}
