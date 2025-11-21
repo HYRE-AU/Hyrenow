@@ -20,7 +20,9 @@ type Interview = {
   started_at: string | null
   completed_at: string | null
   score: number | null
-  evaluation: string | null
+  recommendation: string | null
+  structured_evaluation: any | null
+  transcript: any | null
   roles: {
     id: string
     title: string
@@ -62,7 +64,9 @@ export default function CandidateProfilePage() {
             started_at,
             completed_at,
             score,
-            evaluation,
+            recommendation,
+            structured_evaluation,
+            transcript,
             roles (
               id,
               title
@@ -320,11 +324,91 @@ export default function CandidateProfilePage() {
                         </div>
                       )}
 
-                      {interview.evaluation && (
+                      {/* Structured Evaluation */}
+                      {interview.structured_evaluation ? (
+                        <div className="space-y-6">
+                          {/* Recommendation Badge */}
+                          <div className="bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl p-6 border border-indigo-100">
+                            <h3 className="text-sm font-medium text-gray-700 mb-3">Recommendation</h3>
+                            <div className={`inline-flex items-center px-6 py-3 rounded-full text-lg font-bold ${
+                              interview.structured_evaluation.recommendation === 'strong yes' ? 'bg-green-100 text-green-800' :
+                              interview.structured_evaluation.recommendation === 'yes' ? 'bg-blue-100 text-blue-800' :
+                              interview.structured_evaluation.recommendation === 'no' ? 'bg-orange-100 text-orange-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {interview.structured_evaluation.recommendation === 'strong yes' && '✓✓ '}
+                              {interview.structured_evaluation.recommendation === 'strong no' && '✗✗ '}
+                              {interview.structured_evaluation.recommendation?.toUpperCase()}
+                            </div>
+                          </div>
+
+                          {/* Reasons to Proceed */}
+                          {interview.structured_evaluation.reasons_to_proceed?.length > 0 && (
+                            <div className="bg-white rounded-xl p-6 border border-gray-200">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-4">✓ Reasons to Proceed</h3>
+                              <ul className="space-y-3">
+                                {interview.structured_evaluation.reasons_to_proceed.map((reason: string, idx: number) => (
+                                  <li key={idx} className="flex gap-3">
+                                    <span className="text-green-600 font-bold">•</span>
+                                    <span className="text-gray-700">{reason}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Flags/Risks */}
+                          {interview.structured_evaluation.flags_risks?.length > 0 && (
+                            <div className="bg-orange-50 rounded-xl p-6 border border-orange-200">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-4">⚠️ Flags & Risks</h3>
+                              <ul className="space-y-3">
+                                {interview.structured_evaluation.flags_risks.map((flag: string, idx: number) => (
+                                  <li key={idx} className="flex gap-3">
+                                    <span className="text-orange-600 font-bold">•</span>
+                                    <span className="text-gray-700">{flag}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Question-by-Question Evaluation */}
+                          {interview.structured_evaluation.question_evaluations?.length > 0 && (
+                            <div className="bg-white rounded-xl p-6 border border-gray-200">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-6">Question Performance</h3>
+                              <div className="space-y-6">
+                                {interview.structured_evaluation.question_evaluations.map((qe: any, idx: number) => (
+                                  <div key={idx} className="border-l-4 border-indigo-500 pl-4">
+                                    <p className="font-semibold text-gray-900 mb-2">Q{idx + 1}: {qe.question}</p>
+                                    <p className="text-sm text-gray-600">{qe.evaluation}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Transcript Tab */}
+                          {interview.transcript && (
+                            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                              <details className="cursor-pointer">
+                                <summary className="text-lg font-semibold text-gray-900 mb-4 cursor-pointer hover:text-indigo-600">
+                                  📄 View Full Transcript
+                                </summary>
+                                <div className="mt-4 bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
+                                  <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                                    {typeof interview.transcript === 'object' ? interview.transcript.text : interview.transcript}
+                                  </pre>
+                                </div>
+                              </details>
+                            </div>
+                          )}
+                        </div>
+                      ) : interview.recommendation && (
+                        // Fallback for old format
                         <div className="bg-gray-50 rounded-lg p-4">
                           <p className="text-sm font-medium text-gray-700 mb-2">Evaluation Summary</p>
                           <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                            {interview.evaluation}
+                            {interview.recommendation}
                           </p>
                         </div>
                       )}
