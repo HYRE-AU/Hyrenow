@@ -18,9 +18,18 @@ type Question = {
   order_index: number
 }
 
+type Interview = {
+  id: string
+  status: string
+  structured_evaluation: {
+    recommendation?: string
+  } | null
+}
+
 export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
+  const [interviews, setInterviews] = useState<Interview[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const params = useParams()
@@ -29,7 +38,7 @@ export default function RoleDetailPage() {
   useEffect(() => {
     async function fetchRoleData() {
       const supabase = createClient()
-      
+
       const { data: roleData, error: roleError } = await supabase
         .from('roles')
         .select('*')
@@ -51,8 +60,18 @@ export default function RoleDetailPage() {
         console.error('Error fetching questions:', questionsError)
       }
 
+      const { data: interviewsData, error: interviewsError } = await supabase
+        .from('interviews')
+        .select('id, status, structured_evaluation')
+        .eq('role_id', roleId)
+
+      if (interviewsError) {
+        console.error('Error fetching interviews:', interviewsError)
+      }
+
       setRole(roleData)
       setQuestions(questionsData || [])
+      setInterviews((interviewsData as any) || [])
       setLoading(false)
     }
 
@@ -66,6 +85,20 @@ export default function RoleDetailPage() {
       default: return 'bg-blue-100 text-blue-800'
     }
   }
+
+  // Calculate candidate statistics
+  const totalInvited = interviews.length
+  const completed = interviews.filter(i => i.status === 'completed').length
+  const passed = interviews.filter(i =>
+    i.status === 'completed' &&
+    i.structured_evaluation?.recommendation &&
+    ['strong yes', 'yes'].includes(i.structured_evaluation.recommendation.toLowerCase())
+  ).length
+  const rejected = interviews.filter(i =>
+    i.status === 'completed' &&
+    i.structured_evaluation?.recommendation &&
+    ['no', 'strong no'].includes(i.structured_evaluation.recommendation.toLowerCase())
+  ).length
 
   if (loading) {
     return (
@@ -105,22 +138,14 @@ export default function RoleDetailPage() {
           </button>
           
           {/* Role Header */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{role.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span className={`px-3 py-1 rounded-full ${getStatusColor(role.status)}`}>
-                  {role.status}
-                </span>
-                <span>Created {new Date(role.created_at).toLocaleDateString()}</span>
-              </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{role.title}</h1>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span className={`px-3 py-1 rounded-full ${getStatusColor(role.status)}`}>
+                {role.status}
+              </span>
+              <span>Created {new Date(role.created_at).toLocaleDateString()}</span>
             </div>
-            <button
-              onClick={() => router.push(`/dashboard/roles/${roleId}/invite`)}
-              className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
-            >
-              📧 Invite Candidates
-            </button>
           </div>
         </div>
 
@@ -182,6 +207,22 @@ export default function RoleDetailPage() {
                   <span className="font-semibold text-gray-900">{questions.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Candidates Invited</span>
+                  <span className="font-semibold text-gray-900">{totalInvited}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Completed Interviews</span>
+                  <span className="font-semibold text-gray-900">{completed}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Passed/Progressed</span>
+                  <span className="font-semibold text-green-600">{passed}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Rejected</span>
+                  <span className="font-semibold text-red-600">{rejected}</span>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                   <span className="text-gray-600">Status</span>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(role.status)}`}>
                     {role.status}
