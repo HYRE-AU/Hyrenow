@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Vapi from '@vapi-ai/web'
 
@@ -31,6 +31,7 @@ export default function InterviewPage() {
   const [error, setError] = useState('')
   const [callState, setCallState] = useState<'idle' | 'connecting' | 'active' | 'ended'>('idle')
   const [vapi, setVapi] = useState<Vapi | null>(null)
+  const currentCallIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     async function fetchInterview() {
@@ -63,8 +64,8 @@ export default function InterviewPage() {
     setCallState('connecting')
 
     try {
-      // Start Vapi call
-      await vapi.start({
+      // Start Vapi call - this returns the call object with the ID
+      const call = await vapi.start({
         transcriber: {
           provider: 'deepgram',
           model: 'nova-2',
@@ -91,6 +92,12 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
         },
         firstMessage: `Hello ${interview.candidate.name}! Thank you for joining us today for the ${interview.role.title} interview. I'll be asking you ${interview.questions.length} questions. Are you ready to begin?`
       })
+
+      // Capture the call ID for later use in a ref (so it's accessible in event handlers)
+      if (call?.id) {
+        currentCallIdRef.current = call.id
+        console.log('Call started with ID:', call.id)
+      }
 
       setCallState('active')
     } catch (err: any) {
@@ -124,6 +131,17 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
       console.log('Call ended - Full callData:', JSON.stringify(callData, null, 2))
       setCallState('ended')
 
+      // Use the stored call ID (captured when call started)
+      const vapiCallId = currentCallIdRef.current || callData?.id || callData?.callId
+
+      if (!vapiCallId) {
+        console.error('No call ID available!')
+        setError('Failed to save interview - call ID not found')
+        return
+      }
+
+      console.log('Using call ID:', vapiCallId)
+
       // Send call completion to backend - transcript will be fetched from Vapi's API
       try {
         const response = await fetch('/api/interview/complete', {
@@ -131,7 +149,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             slug,
-            vapiCallId: callData?.id || callData?.callId
+            vapiCallId
           })
         })
 
