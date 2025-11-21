@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { nanoid } from 'nanoid'
 
 type Candidate = {
   firstName: string
@@ -18,6 +17,7 @@ type Role = {
   id: string
   title: string
   org_id: string
+  company_name?: string
 }
 
 export default function InviteCandidatesPage() {
@@ -38,20 +38,13 @@ export default function InviteCandidatesPage() {
       const supabase = createClient()
       const { data } = await supabase
         .from('roles')
-        .select(`
-          id,
-          title,
-          org_id,
-          organisations (
-            name
-          )
-        `)
+        .select('id, title, org_id, company_name')
         .eq('id', roleId)
         .single()
 
       if (data) {
         setRole(data)
-        setOrgName((data as any).organisations?.name || 'Our Company')
+        setOrgName(data.company_name || 'Our Company')
       }
     }
     fetchRole()
@@ -74,7 +67,7 @@ export default function InviteCandidatesPage() {
 
   async function inviteCandidates() {
     // Validate
-    const valid = candidates.every(c => 
+    const valid = candidates.every(c =>
       c.firstName.trim() && c.lastName.trim() && c.email.trim() && c.email.includes('@')
     )
 
@@ -87,61 +80,42 @@ export default function InviteCandidatesPage() {
     const supabase = createClient()
 
     try {
-      const results: Candidate[] = []
+      // Get the user's session for auth token
+      const { data: { session } } = await supabase.auth.getSession()
 
-      for (const candidate of candidates) {
-        try {
-          // Create or find candidate
-          const { data: existingCandidate } = await supabase
-            .from('candidates')
-            .select('id')
-            .eq('email', candidate.email.toLowerCase().trim())
-            .eq('org_id', role!.org_id)
-            .single()
-
-          let candidateId = existingCandidate?.id
-
-          if (!candidateId) {
-            const { data: newCandidate, error: candidateError } = await supabase
-              .from('candidates')
-              .insert({
-                org_id: role!.org_id,
-                name: `${candidate.firstName} ${candidate.lastName}`,
-                email: candidate.email.toLowerCase().trim()
-              })
-              .select()
-              .single()
-
-            if (candidateError) throw candidateError
-            candidateId = newCandidate.id
-          }
-
-          // Create interview
-          const slug = nanoid(10)
-          const { error: interviewError } = await supabase
-            .from('interviews')
-            .insert({
-              org_id: role!.org_id,
-              role_id: roleId,
-              candidate_id: candidateId,
-              slug,
-              status: 'invited'
-            })
-
-          if (interviewError) throw interviewError
-
-          results.push({
-            ...candidate,
-            id: candidateId,
-            slug
-          })
-        } catch (error: any) {
-          results.push({
-            ...candidate,
-            error: error.message
-          })
-        }
+      if (!session) {
+        alert('You must be logged in to invite candidates')
+        return
       }
+
+      // Call the API route with all candidates at once
+      const response = await fetch('/api/candidates/invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          roleId,
+          candidates
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to invite candidates')
+      }
+
+      // Map results back to candidate format
+      const results: Candidate[] = data.results.map((result: any) => ({
+        firstName: result.firstName,
+        lastName: result.lastName,
+        email: result.email,
+        id: result.id,
+        slug: result.slug,
+        error: result.error
+      }))
 
       setCandidates(results)
       setStep('success')

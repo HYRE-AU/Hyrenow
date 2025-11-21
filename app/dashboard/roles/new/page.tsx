@@ -13,6 +13,7 @@ export default function NewRolePage() {
   const [jobUrl, setJobUrl] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [companyName, setCompanyName] = useState('')
   
   // Step 2: Questions
   const [questions, setQuestions] = useState<Array<{ text: string; order: number }>>([])
@@ -42,6 +43,7 @@ export default function NewRolePage() {
       const data = await response.json()
       setTitle(data.title || '')
       setDescription(data.description || '')
+      setCompanyName(data.companyName || '')
     } catch (error: any) {
       alert(error.message || 'Failed to parse job URL. Please enter details manually.')
     } finally {
@@ -50,8 +52,8 @@ export default function NewRolePage() {
   }
 
   async function generateQuestions() {
-    if (!title.trim() || !description.trim()) {
-      alert('Please provide job title and description')
+    if (!title.trim() || !companyName.trim() || !description.trim()) {
+      alert('Please provide job title, company name, and description')
       return
     }
 
@@ -131,6 +133,7 @@ export default function NewRolePage() {
           created_by: user.id,
           title,
           jd_text: description,
+          company_name: companyName,
           status: 'active'
         })
         .select()
@@ -322,6 +325,21 @@ export default function NewRolePage() {
             />
           </div>
 
+          {/* Company Name */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Company Name *
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="e.g., Acme Inc"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            />
+          </div>
+
           {/* Job Description */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -340,7 +358,7 @@ export default function NewRolePage() {
           {/* Save & Continue */}
           <button
             onClick={generateQuestions}
-            disabled={loading || !title.trim() || !description.trim()}
+            disabled={loading || !title.trim() || !companyName.trim() || !description.trim()}
             className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
           >
             {loading ? 'Generating Questions...' : 'Save & Continue to Questions'}

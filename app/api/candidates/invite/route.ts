@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid'
 
 export async function POST(request: Request) {
   try {
-    const { roleId, candidateName, candidateEmail } = await request.json()
+    const { roleId, candidates } = await request.json()
 
     // Get auth header
     const authHeader = request.headers.get('authorization')
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     // Get user from token
     const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    
+
     if (userError || !user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
@@ -38,58 +38,72 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
-    // Create or get candidate
-    let candidateId: string
+    // Process each candidate
+    const results = []
 
-    const { data: existingCandidate } = await supabase
-      .from('candidates')
-      .select('id')
-      .eq('email', candidateEmail)
-      .eq('org_id', profile.org_id)
-      .single()
+    for (const candidate of candidates) {
+      try {
+        // Create or get candidate
+        let candidateId: string
 
-    if (existingCandidate) {
-      candidateId = existingCandidate.id
-    } else {
-      const { data: newCandidate, error: candidateError } = await supabase
-        .from('candidates')
-        .insert({
-          org_id: profile.org_id,
-          name: candidateName,
-          email: candidateEmail,
+        const { data: existingCandidate } = await supabase
+          .from('candidates')
+          .select('id')
+          .eq('email', candidate.email.toLowerCase().trim())
+          .eq('org_id', profile.org_id)
+          .single()
+
+        if (existingCandidate) {
+          candidateId = existingCandidate.id
+        } else {
+          const { data: newCandidate, error: candidateError } = await supabase
+            .from('candidates')
+            .insert({
+              org_id: profile.org_id,
+              name: `${candidate.firstName} ${candidate.lastName}`,
+              email: candidate.email.toLowerCase().trim(),
+            })
+            .select()
+            .single()
+
+          if (candidateError) throw candidateError
+          candidateId = newCandidate.id
+        }
+
+        // Generate unique slug for the interview
+        const slug = nanoid(10)
+
+        // Create interview
+        const { error: interviewError } = await supabase
+          .from('interviews')
+          .insert({
+            org_id: profile.org_id,
+            role_id: roleId,
+            candidate_id: candidateId,
+            slug,
+            status: 'invited',
+          })
+
+        if (interviewError) throw interviewError
+
+        results.push({
+          ...candidate,
+          id: candidateId,
+          slug,
+          success: true
         })
-        .select()
-        .single()
-
-      if (candidateError) throw candidateError
-      candidateId = newCandidate.id
+      } catch (error: any) {
+        results.push({
+          ...candidate,
+          error: error.message,
+          success: false
+        })
+      }
     }
 
-    // Generate unique slug for the interview
-    const slug = nanoid(10)
-
-    // Create interview
-    const { data: interview, error: interviewError } = await supabase
-      .from('interviews')
-      .insert({
-        org_id: profile.org_id,
-        role_id: roleId,
-        candidate_id: candidateId,
-        slug,
-        status: 'invited',
-      })
-      .select()
-      .single()
-
-    if (interviewError) throw interviewError
-
-    // Generate the interview link
-    const interviewLink = `${process.env.NEXT_PUBLIC_APP_URL}/interview/${slug}`
-
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      interviewId: interview.id,
-      interviewLink,
+      results
     })
   } catch (error: any) {
     console.error('Candidate invitation error:', error)

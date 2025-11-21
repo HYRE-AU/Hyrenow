@@ -54,6 +54,7 @@ export async function POST(request: Request) {
           content: `Extract job information from the provided text and return ONLY a JSON object with:
 {
   "title": "<job title>",
+  "companyName": "<company name>",
   "description": "<full job description including responsibilities, requirements, etc.>"
 }
 
