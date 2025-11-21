@@ -7,36 +7,44 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
   try {
-    const { jdText } = await request.json()
+    const { title, description, count = 5 } = await request.json()
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: 'You are an expert technical recruiter. Generate 5-7 specific, behavioral interview questions based on the job description provided. Return ONLY a JSON array of question strings, no other text, no markdown formatting.',
+          content: `You are an expert HR professional creating interview questions. Generate exactly ${count} insightful interview questions designed to extract key information from candidates that will allow evaluation against the job description.
+
+Focus on questions that:
+- Assess relevant experience and skills
+- Evaluate problem-solving abilities
+- Gauge cultural fit
+- Uncover specific examples from past work
+- Are open-ended to encourage detailed responses
+
+Return ONLY a JSON array of question strings:
+["Question 1", "Question 2", ...]`
         },
         {
           role: 'user',
-          content: `Generate interview questions for this role:\n\n${jdText}`,
-        },
+          content: `Job Title: ${title}\n\nJob Description:\n${description}`
+        }
       ],
       temperature: 0.7,
     })
 
-    let content = completion.choices[0].message.content
-    if (!content) throw new Error('No response from OpenAI')
+    const content = completion.choices[0].message.content
+    if (!content) throw new Error('No questions generated')
 
-    // Strip markdown code blocks if present
-    content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-
-    const questions = JSON.parse(content)
+    const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const questions = JSON.parse(cleanContent)
 
     return NextResponse.json({ questions })
   } catch (error: any) {
     console.error('Question generation error:', error)
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Failed to generate questions' },
       { status: 500 }
     )
   }
