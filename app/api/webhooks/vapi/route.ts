@@ -9,30 +9,47 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     console.log('📞 Vapi webhook received');
+    console.log('📦 Webhook body:', JSON.stringify(body, null, 2));
 
     const { message } = body;
 
     if (message?.type === 'end-of-call-report') {
       console.log('✅ End-of-call-report received');
-      
-      // THE FIX: Look in message.call.metadata!
-      const interviewSlug = message?.call?.metadata?.interviewSlug;
-      
+
+      // Check multiple possible locations for metadata
+      const interviewSlug =
+        message?.call?.assistant?.metadata?.interviewSlug ||
+        message?.call?.metadata?.interviewSlug ||
+        message?.assistant?.metadata?.interviewSlug ||
+        message?.metadata?.interviewSlug;
+
       console.log('🔍 Found interviewSlug:', interviewSlug);
-      
+      console.log('🔍 Checked paths:', {
+        'message.call.assistant.metadata': message?.call?.assistant?.metadata,
+        'message.call.metadata': message?.call?.metadata,
+        'message.assistant.metadata': message?.assistant?.metadata,
+        'message.metadata': message?.metadata
+      });
+
       if (!interviewSlug) {
-        console.error('❌ No interview slug in message.call.metadata');
+        console.error('❌ No interview slug found in any metadata location');
         return NextResponse.json({ error: 'No interview slug' }, { status: 400 });
       }
 
-      // Get transcript and messages - THEY'RE IN MESSAGE!
-      const transcript = message.transcript || '';
-      const messages = message.messages || [];
-      
+      // Get transcript and messages from the call object
+      const transcript = message?.call?.transcript || message?.transcript || '';
+      const messages = message?.call?.messages || message?.messages || [];
+
       console.log(`📝 Transcript length: ${transcript.length} chars`);
       console.log(`💬 Messages count: ${messages.length}`);
+
+      if (!transcript || transcript.length === 0) {
+        console.error('❌ No transcript found in webhook');
+        console.error('Available fields:', Object.keys(message?.call || {}));
+        return NextResponse.json({ error: 'No transcript available' }, { status: 400 });
+      }
 
       // Update interview with transcript
       const { error: updateError } = await supabase
@@ -51,7 +68,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('✅ Interview transcript saved successfully!');
-      
+
       return NextResponse.json({ success: true });
     }
 
