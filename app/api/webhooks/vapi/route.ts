@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     console.log('📞 Vapi webhook received');
-    console.log('📦 Webhook body:', JSON.stringify(body, null, 2));
 
     const { message } = body;
 
@@ -25,16 +24,10 @@ export async function POST(request: NextRequest) {
         message?.assistant?.metadata?.interviewSlug ||
         message?.metadata?.interviewSlug;
 
-      console.log('🔍 Found interviewSlug:', interviewSlug);
-      console.log('🔍 Checked paths:', {
-        'message.call.assistant.metadata': message?.call?.assistant?.metadata,
-        'message.call.metadata': message?.call?.metadata,
-        'message.assistant.metadata': message?.assistant?.metadata,
-        'message.metadata': message?.metadata
-      });
+      console.log('🔍 Interview slug:', interviewSlug);
 
       if (!interviewSlug) {
-        console.error('❌ No interview slug found in any metadata location');
+        console.error('❌ No interview slug found in metadata');
         return NextResponse.json({ error: 'No interview slug' }, { status: 400 });
       }
 
@@ -42,12 +35,10 @@ export async function POST(request: NextRequest) {
       const transcript = message?.call?.transcript || message?.transcript || '';
       const messages = message?.call?.messages || message?.messages || [];
 
-      console.log(`📝 Transcript length: ${transcript.length} chars`);
-      console.log(`💬 Messages count: ${messages.length}`);
+      console.log(`📝 Transcript: ${transcript.length} chars, ${messages.length} messages`);
 
       if (!transcript || transcript.length === 0) {
         console.error('❌ No transcript found in webhook');
-        console.error('Available fields:', Object.keys(message?.call || {}));
         return NextResponse.json({ error: 'No transcript available' }, { status: 400 });
       }
 
