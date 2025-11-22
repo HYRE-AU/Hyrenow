@@ -104,12 +104,49 @@ export async function POST(request: Request) {
 
     // Calculate overall recommendation
     const avgScore = evaluations.reduce((sum, e) => sum + e.score, 0) / evaluations.length
-    const recommendation = 
+    const recommendation =
       avgScore >= 3.5 ? 'strong yes' :
       avgScore >= 2.5 ? 'yes' :
       avgScore >= 1.5 ? 'no' : 'strong no'
 
     const overallScore = Math.round((avgScore / 4) * 100)
+
+    // Build structured evaluation for UI
+    const reasonsToProceed: string[] = []
+    const flagsRisks: string[] = []
+
+    evaluations.forEach((evaluation) => {
+      // Add strengths as reasons to proceed
+      if (evaluation.strengths && Array.isArray(evaluation.strengths)) {
+        reasonsToProceed.push(...evaluation.strengths)
+      }
+      // Add concerns as flags/risks
+      if (evaluation.concerns && Array.isArray(evaluation.concerns)) {
+        flagsRisks.push(...evaluation.concerns)
+      }
+    })
+
+    // Build question evaluations for UI
+    const questionEvaluations = qaMapping
+      .filter((qa: any) => qa.type === 'interview')
+      .map((qa: any, index: number) => {
+        const evaluationData = evaluations[index]
+        const wordCount = qa.answer.split(' ').length
+        const durationSeconds = Math.round(wordCount / 2) // ~2 words per second
+
+        return {
+          question: qa.question,
+          evaluation: evaluationData?.strengths?.[0] || 'No evaluation available',
+          answer_duration_seconds: durationSeconds
+        }
+      })
+
+    const structuredEvaluation = {
+      recommendation,
+      reasons_to_proceed: reasonsToProceed,
+      flags_risks: flagsRisks,
+      question_evaluations: questionEvaluations
+    }
 
     // Update interview with overall results
     await supabase
@@ -117,6 +154,7 @@ export async function POST(request: Request) {
       .update({
         score: overallScore,
         recommendation,
+        structured_evaluation: structuredEvaluation,
         status: 'completed'
       })
       .eq('id', interviewId)
