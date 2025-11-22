@@ -178,8 +178,52 @@ export default function NewRolePage() {
     const temp = updated[index]
     updated[index] = updated[newIndex]
     updated[newIndex] = temp
-    
+
     setAllQuestions(updated.map((q, i) => ({ ...q, order: i })))
+  }
+
+  function updateCompetency(index: number, field: keyof Competency | string, value: any) {
+    const updated = [...competencies]
+
+    if (field === 'name' || field === 'description') {
+      updated[index] = { ...updated[index], [field]: value }
+    } else if (field.startsWith('bars_rubric.')) {
+      const level = field.split('.')[1] as 'level_1' | 'level_2' | 'level_3' | 'level_4'
+      updated[index] = {
+        ...updated[index],
+        bars_rubric: {
+          ...updated[index].bars_rubric,
+          [level]: {
+            ...updated[index].bars_rubric[level],
+            description: value
+          }
+        }
+      }
+    }
+
+    setCompetencies(updated)
+  }
+
+  function addCompetency() {
+    const newCompetency: Competency = {
+      name: '',
+      description: '',
+      bars_rubric: {
+        level_1: { label: 'Below Expectations', description: '' },
+        level_2: { label: 'Meets Expectations', description: '' },
+        level_3: { label: 'Exceeds Expectations', description: '' },
+        level_4: { label: 'Outstanding', description: '' }
+      }
+    }
+    setCompetencies([...competencies, newCompetency])
+  }
+
+  function removeCompetency(index: number) {
+    if (competencies.length <= 1) {
+      alert('You must have at least one competency')
+      return
+    }
+    setCompetencies(competencies.filter((_, i) => i !== index))
   }
 
   async function createRole() {
@@ -284,7 +328,7 @@ export default function NewRolePage() {
             </p>
 
             {/* Competency Table */}
-            <div className="overflow-x-auto mb-8">
+            <div className="overflow-x-auto mb-4">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gradient-to-r from-indigo-50 to-cyan-50">
@@ -310,34 +354,89 @@ export default function NewRolePage() {
                       <div>Level 4</div>
                       <div className="text-xs font-semibold text-green-700 mt-1">Outstanding</div>
                     </th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900 w-20">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {competencies.map((comp, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900">
-                        {comp.name}
+                      <td className="border border-gray-300 px-2 py-2">
+                        <textarea
+                          value={comp.name}
+                          onChange={(e) => updateCompetency(index, 'name', e.target.value)}
+                          placeholder="Competency name"
+                          className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                          rows={2}
+                        />
                       </td>
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                        {comp.description}
+                      <td className="border border-gray-300 px-2 py-2">
+                        <textarea
+                          value={comp.description}
+                          onChange={(e) => updateCompetency(index, 'description', e.target.value)}
+                          placeholder="Description"
+                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                          rows={3}
+                        />
                       </td>
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-red-50">
-                        {comp.bars_rubric.level_1.description}
+                      <td className="border border-gray-300 px-2 py-2 bg-red-50">
+                        <textarea
+                          value={comp.bars_rubric.level_1.description}
+                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_1', e.target.value)}
+                          placeholder="Below expectations description"
+                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none bg-white"
+                          rows={4}
+                        />
                       </td>
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                        {comp.bars_rubric.level_2.description}
+                      <td className="border border-gray-300 px-2 py-2 bg-yellow-50">
+                        <textarea
+                          value={comp.bars_rubric.level_2.description}
+                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_2', e.target.value)}
+                          placeholder="Meets expectations description"
+                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none bg-white"
+                          rows={4}
+                        />
                       </td>
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-blue-50">
-                        {comp.bars_rubric.level_3.description}
+                      <td className="border border-gray-300 px-2 py-2 bg-blue-50">
+                        <textarea
+                          value={comp.bars_rubric.level_3.description}
+                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_3', e.target.value)}
+                          placeholder="Exceeds expectations description"
+                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white"
+                          rows={4}
+                        />
                       </td>
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-green-50">
-                        {comp.bars_rubric.level_4.description}
+                      <td className="border border-gray-300 px-2 py-2 bg-green-50">
+                        <textarea
+                          value={comp.bars_rubric.level_4.description}
+                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_4', e.target.value)}
+                          placeholder="Outstanding description"
+                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
+                          rows={4}
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-2 py-2 text-center">
+                        <button
+                          onClick={() => removeCompetency(index)}
+                          className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                          title="Remove competency"
+                        >
+                          ✕
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            <button
+              onClick={addCompetency}
+              className="w-full mb-4 px-6 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-indigo-400 hover:text-indigo-600 font-medium"
+            >
+              + Add Competency
+            </button>
 
             <button
               onClick={generateInterviewQuestions}

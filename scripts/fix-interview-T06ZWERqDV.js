@@ -14,8 +14,8 @@ async function fixInterview() {
     apiKey: process.env.OPENAI_API_KEY,
   })
 
-  const slug = 'T06ZWERqDV'
-  const vapiCallId = '019aa3c0-30bd-7aa1-9b4c-9a7c4ea93c58'
+  const slug = 'KjGjR_m45b'
+  const vapiCallId = '019aaa7d-ce22-7aa2-9ad8-cad81db4b685'
 
   console.log('Fetching transcript from Vapi...\n')
 

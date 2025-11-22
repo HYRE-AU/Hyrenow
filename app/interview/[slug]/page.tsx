@@ -98,7 +98,8 @@ export default function InterviewPage() {
         transcriber: {
           provider: 'deepgram',
           model: 'nova-2',
-          language: 'en'
+          language: 'en',
+          endpointing: 400
         },
         model: {
           provider: 'openai',
