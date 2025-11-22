@@ -87,34 +87,16 @@ export async function POST(request: Request) {
     // Update interview with transcript and duration
     await supabase
       .from('interviews')
-      .update({ 
+      .update({
         transcript: { text: transcript, messages: messages },
         completed_at: new Date().toISOString(),
         duration_seconds: durationSeconds,
         vapi_call_id: vapiCallId,
-        status: 'completed' // Will be updated by evaluation
+        status: 'completed'
       })
       .eq('id', interview.id)
 
-    // Trigger competency-based evaluation (async)
-    if (transcript && transcript !== 'Transcript not available') {
-      console.log('✅ Triggering evaluation for interview:', interview.id)
-      console.log('📊 Transcript available, length:', transcript.length, 'characters')
-
-      // Don't await - let it run in background
-      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          interviewId: interview.id,
-          transcript,
-          messages
-        })
-      }).catch(err => console.error('❌ Evaluation trigger failed:', err))
-    } else {
-      console.error('❌ Cannot trigger evaluation - no valid transcript available')
-    }
-
+    console.log('✅ Interview data saved - waiting for Vapi webhook to trigger evaluation')
     console.log('Interview completed successfully for slug:', slug)
 
     return NextResponse.json({ success: true })

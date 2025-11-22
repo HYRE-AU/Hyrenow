@@ -42,6 +42,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'No transcript available' }, { status: 400 });
       }
 
+      // Get interview ID for evaluation
+      const { data: interview, error: fetchError } = await supabase
+        .from('interviews')
+        .select('id')
+        .eq('slug', interviewSlug)
+        .single();
+
+      if (fetchError || !interview) {
+        console.error('❌ Failed to fetch interview:', fetchError);
+        return NextResponse.json({ error: 'Interview not found' }, { status: 404 });
+      }
+
       // Update interview with transcript
       const { error: updateError } = await supabase
         .from('interviews')
@@ -58,6 +70,20 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('✅ Interview transcript saved successfully!');
+
+      // Trigger evaluation now that transcript is saved
+      console.log('✅ Triggering evaluation for interview:', interview.id);
+      console.log('📊 Transcript available, length:', transcript.length, 'characters');
+
+      // Don't await - let it run in background
+      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewId: interview.id,
+          transcript
+        })
+      }).catch(err => console.error('❌ Evaluation trigger failed:', err));
 
       return NextResponse.json({ success: true });
     }
