@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const [totalRoles, setTotalRoles] = useState(0)
   const [totalInterviews, setTotalInterviews] = useState(0)
   const router = useRouter()
-  
+
   const ITEMS_PER_PAGE = 6
 
   useEffect(() => {
@@ -128,12 +128,6 @@ export default function DashboardPage() {
     }
   }, [rolesPage, interviewsPage, user])
 
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800'
@@ -156,24 +150,7 @@ export default function DashboardPage() {
   const totalInterviewsPages = Math.ceil(totalInterviews / ITEMS_PER_PAGE)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-              HyreNow
-            </h1>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -374,7 +351,6 @@ export default function DashboardPage() {
             </>
           )}
         </div>
-      </main>
     </div>
   )
 }

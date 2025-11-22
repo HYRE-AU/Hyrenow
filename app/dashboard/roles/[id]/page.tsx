@@ -188,18 +188,7 @@ export default function RoleDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <a href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-              HyreNow
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <button
             onClick={() => router.push('/dashboard')}
@@ -501,7 +490,6 @@ export default function RoleDetailPage() {
             </div>
           )}
         </div>
-      </main>
     </div>
   )
 }
