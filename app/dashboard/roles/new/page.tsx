@@ -41,6 +41,7 @@ export default function NewRolePage() {
   const [jobUrl, setJobUrl] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [companyName, setCompanyName] = useState('')
   
   // Step 2: Competencies
   const [competencies, setCompetencies] = useState<Competency[]>([])
@@ -75,6 +76,7 @@ export default function NewRolePage() {
       const data = await response.json()
       setTitle(data.title || '')
       setDescription(data.description || '')
+      setCompanyName(data.companyName || '')
     } catch (error: any) {
       alert(error.message || 'Failed to parse job URL. Please enter details manually.')
     } finally {
@@ -206,6 +208,7 @@ export default function NewRolePage() {
           created_by: user.id,
           title,
           jd_text: description,
+          company_name: companyName || null,
           status: 'active'
         })
         .select()
@@ -264,18 +267,7 @@ export default function NewRolePage() {
   // STEP 2: Competencies Review
   if (step === 'competencies') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-        <nav className="bg-white shadow-sm border-b">
-          <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <a href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-                HyreNow
-              </a>
-            </div>
-          </div>
-        </nav>
-
-        <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             <div className="mb-6">
               <button
@@ -355,7 +347,6 @@ export default function NewRolePage() {
               {loading ? 'Generating Questions...' : 'Continue to Questions'}
             </button>
           </div>
-        </main>
       </div>
     )
   }
@@ -363,18 +354,7 @@ export default function NewRolePage() {
   // STEP 3: Questions Setup
   if (step === 'questions') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-        <nav className="bg-white shadow-sm border-b">
-          <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <a href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-                HyreNow
-              </a>
-            </div>
-          </div>
-        </nav>
-
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             <div className="mb-6">
               <button
@@ -478,25 +458,13 @@ export default function NewRolePage() {
               {loading ? 'Creating Role...' : 'Create Role'}
             </button>
           </div>
-        </main>
       </div>
     )
   }
 
   // STEP 1: Job Details
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <a href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-              HyreNow
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Role</h1>
           <p className="text-gray-600 mb-8">
@@ -544,6 +512,23 @@ export default function NewRolePage() {
             />
           </div>
 
+          {/* Company Name */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Company Name
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="e.g., Acme Corporation"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This will be used in candidate invitation emails
+            </p>
+          </div>
+
           {/* Job Description */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -568,7 +553,6 @@ export default function NewRolePage() {
             {loading ? 'Generating Competency Matrix...' : 'Continue to Competencies'}
           </button>
         </div>
-      </main>
     </div>
   )
 }
