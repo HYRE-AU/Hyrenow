@@ -75,15 +75,25 @@ export async function POST(request: NextRequest) {
       console.log('✅ Triggering evaluation for interview:', interview.id);
       console.log('📊 Transcript available, length:', transcript.length, 'characters');
 
-      // Don't await - let it run in background
-      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          interviewId: interview.id,
-          transcript
-        })
-      }).catch(err => console.error('❌ Evaluation trigger failed:', err));
+      // Trigger evaluation - must await to ensure it completes before function terminates
+      try {
+        const evaluationResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            interviewId: interview.id,
+            transcript
+          })
+        });
+
+        if (!evaluationResponse.ok) {
+          console.error('❌ Evaluation trigger failed:', await evaluationResponse.text());
+        } else {
+          console.log('✅ Evaluation triggered successfully');
+        }
+      } catch (err) {
+        console.error('❌ Evaluation trigger failed:', err);
+      }
 
       return NextResponse.json({ success: true });
     }
