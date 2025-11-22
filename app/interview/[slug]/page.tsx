@@ -107,7 +107,9 @@ export default function InterviewPage() {
           messages: [
             {
               role: 'system',
-              content: `You are a professional AI interviewer conducting an interview for the position of ${interview.roles.title} at ${interview.roles.organisations.name}. 
+              content: `You are a professional AI interviewer conducting an interview for the position of ${interview.roles.title} at ${interview.roles.organisations.name}.
+
+The candidate's name is ${interview.candidates.name}. Address them by their first name (${interview.candidates.name.split(' ')[0]}) throughout the interview.
 
 You will ask the following questions one at a time:
 ${interview.questions.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}
