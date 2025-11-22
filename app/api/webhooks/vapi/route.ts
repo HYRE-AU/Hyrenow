@@ -77,6 +77,8 @@ export async function POST(request: NextRequest) {
 
       // Trigger evaluation - must await to ensure it completes before function terminates
       try {
+        console.log('🔄 Calling evaluation endpoint:', `${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`);
+
         const evaluationResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -86,13 +88,19 @@ export async function POST(request: NextRequest) {
           })
         });
 
+        console.log('📡 Evaluation response status:', evaluationResponse.status);
+
         if (!evaluationResponse.ok) {
-          console.error('❌ Evaluation trigger failed:', await evaluationResponse.text());
+          const errorText = await evaluationResponse.text();
+          console.error('❌ Evaluation trigger failed with status', evaluationResponse.status);
+          console.error('❌ Error response:', errorText);
         } else {
-          console.log('✅ Evaluation triggered successfully');
+          const result = await evaluationResponse.json();
+          console.log('✅ Evaluation triggered successfully:', result);
         }
-      } catch (err) {
-        console.error('❌ Evaluation trigger failed:', err);
+      } catch (err: any) {
+        console.error('❌ Evaluation trigger exception:', err.message);
+        console.error('❌ Error stack:', err.stack);
       }
 
       return NextResponse.json({ success: true });
