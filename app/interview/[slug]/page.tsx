@@ -120,7 +120,10 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
           provider: '11labs',
           voiceId: 'paula'
         },
-        firstMessage: `Hello ${interview.candidates.name.split(' ')[0]}! Thank you for joining us today for the ${interview.roles.title} interview. I'll be asking you ${interview.questions.length} questions. Are you ready to begin?`
+        firstMessage: `Hello ${interview.candidates.name.split(' ')[0]}! Thank you for joining us today for the ${interview.roles.title} interview. I'll be asking you ${interview.questions.length} questions. Are you ready to begin?`,
+        metadata: {
+          interviewSlug: slug
+        }
       })
 
       setCallState('active')
