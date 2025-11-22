@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +7,7 @@ export async function POST(request: Request) {
 
     console.log('Interview completion request:', { slug, vapiCallId })
 
-    // Fetch transcript and timing from Vapi API
+    // Fetch transcript from Vapi API
     let transcript = 'Transcript not available'
     let messages: any[] = []
     
@@ -59,18 +54,10 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_KEY!
     )
 
-    // Get interview details with started_at for duration calculation
+    // Get interview details
     const { data: interview, error: interviewError } = await supabase
       .from('interviews')
-      .select(`
-        id,
-        role_id,
-        started_at,
-        roles (
-          title,
-          jd_text
-        )
-      `)
+      .select('id, role_id, started_at')
       .eq('slug', slug)
       .single()
 
@@ -85,165 +72,42 @@ export async function POST(request: Request) {
       console.log('Interview duration:', durationSeconds, 'seconds')
     }
 
-    // Get questions for this role
-    const { data: questions } = await supabase
-      .from('questions')
-      .select('text, order_index')
-      .eq('role_id', interview.role_id)
-      .order('order_index')
-
-    // Calculate actual answer durations from message timestamps
-    const questionTimings = calculateQuestionTimings(messages, questions || [])
-    console.log('Question timings:', questionTimings)
-
-    // Generate evaluation using OpenAI
-    const evaluation = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert interviewer evaluating a candidate's interview performance.
-
-Role: ${(interview.roles as any)?.title || 'N/A'}
-Job Description: ${(interview.roles as any)?.jd_text || 'N/A'}
-
-Questions Asked:
-${questions?.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}
-
-Question Timings (actual seconds per answer):
-${questionTimings.map((qt, i) => `Q${i + 1}: ${qt.duration}s`).join('\n')}
-
-Analyze the transcript and provide a structured evaluation.
-
-Return ONLY a JSON object in this exact format (no markdown, no extra text):
-{
-  "score": <number 0-100>,
-  "recommendation": "<strong yes|yes|no|strong no>",
-  "reasons_to_proceed": [
-    "<bullet point 1>",
-    "<bullet point 2>"
-  ],
-  "flags_risks": [
-    "<concern 1>",
-    "<concern 2>"
-  ],
-  "question_evaluations": [
-    {
-      "question": "<question text>",
-      "evaluation": "<2-3 sentence summary of performance>",
-      "answer_duration_seconds": <use the actual timing provided above>
-    }
-  ]
-}
-
-IMPORTANT:
-- recommendation must be exactly one of: "strong yes", "yes", "no", "strong no"
-- reasons_to_proceed: maximum 5 clear, specific points
-- flags_risks: only include genuine concerns, can be empty array [] if none
-- question_evaluations: one entry per question with concise performance summary
-- answer_duration_seconds: use the EXACT timings provided above, not estimates`,
-        },
-        {
-          role: 'user',
-          content: `Interview Transcript:\n\n${transcript}`,
-        },
-      ],
-      temperature: 0.3,
-    })
-
-    const content = evaluation.choices[0].message.content
-    if (!content) throw new Error('No evaluation generated')
-
-    // Parse the evaluation
-    const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    console.log('OpenAI response received')
-
-    const evaluationData = JSON.parse(cleanContent)
-    console.log('Parsed evaluation:', { 
-      score: evaluationData.score, 
-      recommendation: evaluationData.recommendation,
-      duration: durationSeconds 
-    })
-
-    // Update interview in database
-    const { error: updateError } = await supabase
+    // Update interview with transcript and duration
+    await supabase
       .from('interviews')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
+      .update({ 
         transcript: { text: transcript, messages: messages },
-        score: evaluationData.score,
-        recommendation: evaluationData.recommendation,
-        structured_evaluation: evaluationData,
-        vapi_call_id: vapiCallId,
+        completed_at: new Date().toISOString(),
         duration_seconds: durationSeconds,
+        vapi_call_id: vapiCallId,
+        status: 'completed' // Will be updated by evaluation
       })
-      .eq('slug', slug)
+      .eq('id', interview.id)
 
-    if (updateError) {
-      console.error('Database update error:', updateError)
-      throw updateError
+    // Trigger competency-based evaluation (async)
+    if (transcript && transcript !== 'Transcript not available') {
+      console.log('Triggering evaluation for interview:', interview.id)
+      
+      // Don't await - let it run in background
+      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewId: interview.id,
+          transcript,
+          messages
+        })
+      }).catch(err => console.error('Evaluation trigger failed:', err))
     }
 
     console.log('Interview completed successfully for slug:', slug)
 
-    return NextResponse.json({
-      success: true,
-      ...evaluationData
-    })
+    return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('Interview completion error:', error)
     return NextResponse.json(
       { error: error.message },
       { status: 500 }
     )
-  }
-}
-
-// Helper function to calculate actual answer durations from message timestamps
-function calculateQuestionTimings(messages: any[], questions: any[]) {
-  const timings: Array<{ question: string; duration: number }> = []
-  
-  if (!messages || messages.length === 0) {
-    // Return default timings if no messages
-    return questions.map(q => ({ question: q.text, duration: 0 }))
-  }
-
-  // Try to parse timestamps and calculate durations
-  for (let i = 0; i < messages.length - 1; i++) {
-    const currentMsg = messages[i]
-    const nextMsg = messages[i + 1]
-    
-    if (currentMsg.role === 'assistant' && nextMsg.role === 'user') {
-      // Assistant asked question, user answered
-      const startTime = parseMessageTime(currentMsg)
-      const endTime = parseMessageTime(nextMsg)
-      
-      if (startTime && endTime) {
-        const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000)
-        timings.push({
-          question: currentMsg.content || currentMsg.message || '',
-          duration: Math.max(0, duration)
-        })
-      }
-    }
-  }
-
-  // If we couldn't get timings, return defaults
-  if (timings.length === 0) {
-    return questions.map(q => ({ question: q.text, duration: 0 }))
-  }
-
-  return timings
-}
-
-function parseMessageTime(message: any): Date | null {
-  try {
-    if (message.time) return new Date(message.time)
-    if (message.timestamp) return new Date(message.timestamp)
-    if (message.created_at) return new Date(message.created_at)
-    return null
-  } catch {
-    return null
   }
 }

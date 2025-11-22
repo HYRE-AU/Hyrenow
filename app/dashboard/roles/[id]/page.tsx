@@ -15,7 +15,20 @@ type Role = {
 type Question = {
   id: string
   text: string
+  type: string
   order_index: number
+}
+
+type Competency = {
+  id: string
+  name: string
+  description: string
+  bars_rubric: {
+    level_1: { label: string; description: string }
+    level_2: { label: string; description: string }
+    level_3: { label: string; description: string }
+    level_4: { label: string; description: string }
+  }
 }
 
 type Interview = {
@@ -29,8 +42,11 @@ type Interview = {
 export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
+  const [competencies, setCompetencies] = useState<Competency[]>([])
   const [interviews, setInterviews] = useState<Interview[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'questions' | 'rubric'>('questions')
+  
   const router = useRouter()
   const params = useParams()
   const roleId = params.id as string
@@ -60,6 +76,15 @@ export default function RoleDetailPage() {
         console.error('Error fetching questions:', questionsError)
       }
 
+      const { data: competenciesData, error: competenciesError } = await supabase
+        .from('competencies')
+        .select('*')
+        .eq('role_id', roleId)
+
+      if (competenciesError) {
+        console.error('Error fetching competencies:', competenciesError)
+      }
+
       const { data: interviewsData, error: interviewsError } = await supabase
         .from('interviews')
         .select('id, status, structured_evaluation')
@@ -71,6 +96,7 @@ export default function RoleDetailPage() {
 
       setRole(roleData)
       setQuestions(questionsData || [])
+      setCompetencies(competenciesData || [])
       setInterviews((interviewsData as any) || [])
       setLoading(false)
     }
@@ -158,25 +184,123 @@ export default function RoleDetailPage() {
               </div>
             </div>
 
+            {/* Tabbed Section */}
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Interview Questions ({questions.length})
-              </h2>
-              <div className="space-y-4">
-                {questions.map((question, index) => (
-                  <div
-                    key={question.id}
-                    className="p-4 bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl border border-indigo-100"
-                  >
-                    <div className="flex gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-semibold">
-                        {index + 1}
-                      </div>
-                      <p className="text-gray-800 flex-1">{question.text}</p>
-                    </div>
-                  </div>
-                ))}
+              {/* Tab Headers */}
+              <div className="flex border-b border-gray-200 mb-6">
+                <button
+                  onClick={() => setActiveTab('questions')}
+                  className={`px-6 py-3 font-semibold transition-colors ${
+                    activeTab === 'questions'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Questions ({questions.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('rubric')}
+                  className={`px-6 py-3 font-semibold transition-colors ${
+                    activeTab === 'rubric'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Competency Rubric ({competencies.length})
+                </button>
               </div>
+
+              {/* Questions Tab */}
+              {activeTab === 'questions' && (
+                <div className="space-y-4">
+                  {questions.map((question, index) => (
+                    <div
+                      key={question.id}
+                      className={`p-4 rounded-xl border ${
+                        question.type === 'screening'
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-gradient-to-r from-indigo-50 to-cyan-50 border-indigo-100'
+                      }`}
+                    >
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-semibold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${
+                              question.type === 'screening'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-indigo-100 text-indigo-800'
+                            }`}>
+                              {question.type === 'screening' ? 'Screening' : 'Interview'}
+                            </span>
+                          </div>
+                          <p className="text-gray-800">{question.text}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Rubric Tab */}
+              {activeTab === 'rubric' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-indigo-50 to-cyan-50">
+                        <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 w-48">
+                          Competency
+                        </th>
+                        <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 w-40">
+                          Description
+                        </th>
+                        <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
+                          <div>Level 1</div>
+                          <div className="text-xs font-semibold text-red-700 mt-1">Below Expectations</div>
+                        </th>
+                        <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
+                          <div>Level 2</div>
+                          <div className="text-xs font-semibold text-yellow-700 mt-1">Meets Expectations</div>
+                        </th>
+                        <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
+                          <div>Level 3</div>
+                          <div className="text-xs font-semibold text-blue-700 mt-1">Exceeds Expectations</div>
+                        </th>
+                        <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
+                          <div>Level 4</div>
+                          <div className="text-xs font-semibold text-green-700 mt-1">Outstanding</div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {competencies.map((comp, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900">
+                            {comp.name}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                            {comp.description}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-red-50">
+                            {comp.bars_rubric.level_1.description}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
+                            {comp.bars_rubric.level_2.description}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-blue-50">
+                            {comp.bars_rubric.level_3.description}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-green-50">
+                            {comp.bars_rubric.level_4.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
 
