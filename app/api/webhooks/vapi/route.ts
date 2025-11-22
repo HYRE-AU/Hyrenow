@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
       const { error: updateError } = await supabase
         .from('interviews')
         .update({
-          transcript,
-          vapi_messages: messages,
+          transcript: { text: transcript },
           status: 'completed',
           completed_at: new Date().toISOString()
         })
