@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Vapi from '@vapi-ai/web'
 
@@ -41,7 +41,7 @@ export default function InterviewPage() {
   const [showJD, setShowJD] = useState(false)
   const [consentChecked, setConsentChecked] = useState(false)
   const [recruiterEmail, setRecruiterEmail] = useState('support@hyrenow.com')
-  const [vapiCallId, setVapiCallId] = useState<string | null>(null)
+  const vapiCallIdRef = useRef<string | null>(null)
   
   // Survey states
   const [surveySubmitted, setSurveySubmitted] = useState(false)
@@ -172,12 +172,14 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
     vapi.on('call-start-success', (event) => {
       console.log('Call started successfully', event)
       if (event.callId) {
-        setVapiCallId(event.callId)
+        vapiCallIdRef.current = event.callId
+        console.log('✅ Stored Vapi call ID in ref:', event.callId)
       }
     })
 
     vapi.on('call-end', async () => {
       console.log('Call ended')
+      console.log('📤 Sending Vapi call ID to complete endpoint:', vapiCallIdRef.current)
       setCallState('ended')
 
       await fetch('/api/interview/complete', {
@@ -185,7 +187,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slug,
-          vapiCallId: vapiCallId
+          vapiCallId: vapiCallIdRef.current
         })
       })
 
@@ -197,7 +199,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
       setError('An error occurred during the interview')
       setCallState('idle')
     })
-  }, [vapi, slug, vapiCallId])
+  }, [vapi, slug])
 
   if (loading) {
     return (

@@ -5,7 +5,13 @@ export async function POST(request: Request) {
   try {
     const { slug, vapiCallId } = await request.json()
 
-    console.log('Interview completion request:', { slug, vapiCallId })
+    console.log('📥 Interview completion request:', { slug, vapiCallId })
+
+    if (!vapiCallId) {
+      console.error('❌ CRITICAL: No vapiCallId received! Cannot fetch transcript.')
+    } else {
+      console.log('✅ Valid vapiCallId received:', vapiCallId)
+    }
 
     // Fetch transcript from Vapi API
     let transcript = 'Transcript not available'
@@ -13,7 +19,7 @@ export async function POST(request: Request) {
     
     if (vapiCallId) {
       try {
-        console.log('Fetching transcript from Vapi for call:', vapiCallId)
+        console.log('🔍 Fetching transcript from Vapi for call:', vapiCallId)
         const vapiResponse = await fetch(`https://api.vapi.ai/call/${vapiCallId}`, {
           headers: {
             'Authorization': `Bearer ${process.env.VAPI_PRIVATE_KEY}`
@@ -22,13 +28,15 @@ export async function POST(request: Request) {
 
         if (vapiResponse.ok) {
           const callData = await vapiResponse.json()
-          console.log('Vapi call data received')
+          console.log('✅ Vapi call data received successfully')
 
           // Extract messages with timestamps
           if (callData.artifact?.messages) {
             messages = callData.artifact.messages
+            console.log('📝 Found messages in callData.artifact.messages')
           } else if (callData.messages) {
             messages = callData.messages
+            console.log('📝 Found messages in callData.messages')
           }
 
           // Build text transcript
@@ -36,16 +44,20 @@ export async function POST(request: Request) {
             transcript = messages
               .map((msg: any) => `[${msg.time || msg.timestamp || 'unknown'}] ${msg.role}: ${msg.content || msg.message}`)
               .join('\n\n')
+            console.log('✅ Built transcript from messages. Messages:', messages.length, 'Transcript length:', transcript.length)
           } else if (callData.transcript) {
             transcript = callData.transcript
+            console.log('✅ Used callData.transcript directly. Length:', transcript.length)
+          } else {
+            console.warn('⚠️ No messages or transcript found in Vapi response')
           }
-
-          console.log('Extracted messages:', messages.length, 'transcript length:', transcript.length)
         } else {
-          console.error('Failed to fetch from Vapi:', vapiResponse.status)
+          console.error('❌ Failed to fetch from Vapi. Status:', vapiResponse.status, 'StatusText:', vapiResponse.statusText)
+          const errorBody = await vapiResponse.text()
+          console.error('Error response:', errorBody)
         }
       } catch (vapiError) {
-        console.error('Error fetching transcript from Vapi:', vapiError)
+        console.error('❌ Error fetching transcript from Vapi:', vapiError)
       }
     }
 
@@ -86,8 +98,9 @@ export async function POST(request: Request) {
 
     // Trigger competency-based evaluation (async)
     if (transcript && transcript !== 'Transcript not available') {
-      console.log('Triggering evaluation for interview:', interview.id)
-      
+      console.log('✅ Triggering evaluation for interview:', interview.id)
+      console.log('📊 Transcript available, length:', transcript.length, 'characters')
+
       // Don't await - let it run in background
       fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
         method: 'POST',
@@ -97,7 +110,9 @@ export async function POST(request: Request) {
           transcript,
           messages
         })
-      }).catch(err => console.error('Evaluation trigger failed:', err))
+      }).catch(err => console.error('❌ Evaluation trigger failed:', err))
+    } else {
+      console.error('❌ Cannot trigger evaluation - no valid transcript available')
     }
 
     console.log('Interview completed successfully for slug:', slug)
