@@ -266,10 +266,7 @@ export default function CandidateProfilePage() {
           {/* Left Column - Candidate Info */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-              <div className="text-center mb-6">
-                <div className="w-24 h-24 bg-gradient-to-r from-indigo-600 to-cyan-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">
-                  {candidate.name.charAt(0).toUpperCase()}
-                </div>
+              <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">{candidate.name}</h1>
                 <p className="text-gray-600 mt-1">{candidate.email}</p>
               </div>
