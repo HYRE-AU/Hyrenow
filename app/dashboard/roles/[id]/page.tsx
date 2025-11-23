@@ -10,6 +10,7 @@ type Role = {
   jd_text: string
   status: string
   created_at: string
+  company_name: string | null
 }
 
 type Question = {
@@ -201,6 +202,9 @@ export default function RoleDetailPage() {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{role.title}</h1>
+              {role.company_name && (
+                <p className="text-lg text-gray-700 mb-3 font-medium">{role.company_name}</p>
+              )}
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <span className={`px-3 py-1 rounded-full ${getRoleStatusColor(role.status)}`}>
                   {role.status}

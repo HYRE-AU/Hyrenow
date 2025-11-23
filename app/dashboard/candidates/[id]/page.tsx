@@ -29,6 +29,7 @@ type Interview = {
   roles: {
     id: string
     title: string
+    company_name: string | null
   } | null
 }
 
@@ -38,7 +39,6 @@ export default function CandidateProfilePage() {
   const [loading, setLoading] = useState(true)
   const [expandedInterview, setExpandedInterview] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [orgName, setOrgName] = useState('Our Company')
   
   const router = useRouter()
   const params = useParams()
@@ -79,7 +79,8 @@ export default function CandidateProfilePage() {
             duration_seconds,
             roles (
               id,
-              title
+              title,
+              company_name
             )
           `)
           .eq('candidate_id', candidateId)
@@ -87,17 +88,6 @@ export default function CandidateProfilePage() {
 
         if (interviewsError) {
           console.error('Error fetching interviews:', interviewsError)
-        }
-
-        // Get org name
-        if (candidateData) {
-          const { data: orgData } = await supabase
-            .from('organisations')
-            .select('name')
-            .eq('id', candidateData.org_id)
-            .single()
-          
-          if (orgData) setOrgName(orgData.name)
         }
 
         setCandidate(candidateData)
@@ -179,6 +169,8 @@ export default function CandidateProfilePage() {
 
     setActionLoading(interview.id)
     try {
+      const companyName = interview.roles?.company_name || 'the company'
+
       const response = await fetch('/api/interview/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -187,7 +179,7 @@ export default function CandidateProfilePage() {
           candidateName: candidate!.name,
           candidateEmail: candidate!.email,
           roleTitle: interview.roles?.title || 'the position',
-          companyName: orgName
+          companyName: companyName
         })
       })
 
