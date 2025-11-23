@@ -120,20 +120,79 @@ export async function POST(request: Request) {
 
     const overallScore = Math.round((avgScore / 4) * 100)
 
-    // Build structured evaluation for UI
-    const reasonsToProceed: string[] = []
-    const flagsRisks: string[] = []
+    // Build reasons and flags
+    const allStrengths: string[] = []
+    const allConcerns: string[] = []
 
     evaluations.forEach((evaluation) => {
-      // Add strengths as reasons to proceed
       if (evaluation.strengths && Array.isArray(evaluation.strengths)) {
-        reasonsToProceed.push(...evaluation.strengths)
+        allStrengths.push(...evaluation.strengths)
       }
-      // Add concerns as flags/risks
       if (evaluation.concerns && Array.isArray(evaluation.concerns)) {
-        flagsRisks.push(...evaluation.concerns)
+        allConcerns.push(...evaluation.concerns)
       }
     })
+
+    // Organize based on recommendation
+    let reasonsToProceed: string[] | null = null
+    let flagsRisks: string[] | null = null
+    let reasonsNotToProceed: string[] | null = null
+    let strengths: string[] | null = null
+
+    if (recommendation === 'strong yes' || recommendation === 'yes') {
+      reasonsToProceed = allStrengths.slice(0, 5)
+      flagsRisks = allConcerns.slice(0, 5)
+    } else {
+      reasonsNotToProceed = allConcerns.slice(0, 5)
+      strengths = allStrengths.slice(0, 5)
+    }
+
+    // Extract competencies that were evaluated
+    const evaluatedCompetencies = questions
+      .filter((q: any) => q.type === 'interview' && q.competencies)
+      .map((q: any) => q.competencies.name)
+      .filter((name: string, index: number, self: string[]) => self.indexOf(name) === index) // unique
+      .join(', ')
+
+    // Generate recommendation rationale using LLM - rooted in competencies and responsibilities
+    const rationalePrompt = `Based on this interview evaluation, write a 2-3 sentence explanation of WHY we recommend "${recommendation}" for this candidate.
+
+Role: ${(interview.roles as any).title}
+
+Competencies Evaluated: ${evaluatedCompetencies}
+
+Job Responsibilities/What They'll Do:
+${(interview.roles as any).jd_text}
+
+Average Score: ${avgScore.toFixed(2)}/4.0
+Key Strengths: ${allStrengths.slice(0, 3).join('; ') || 'None identified'}
+Key Concerns: ${allConcerns.slice(0, 3).join('; ') || 'None identified'}
+
+Write a concise, specific rationale that:
+1. Connects their performance in the evaluated competencies to the actual job responsibilities
+2. Explains whether they can handle what they'll be doing day-to-day in this role
+3. Focuses on the most important factors for success in this specific position
+
+Be specific about how their strengths/concerns relate to the responsibilities they'll have.`
+
+    const rationaleCompletion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a hiring expert. Write clear, concise explanations for hiring recommendations that directly connect candidate performance to job requirements. Focus on how they will perform in the actual role responsibilities. Write in 2-3 sentences.'
+        },
+        {
+          role: 'user',
+          content: rationalePrompt
+        }
+      ],
+      temperature: 0.5,
+      max_tokens: 200
+    })
+
+    const recommendationRationale = rationaleCompletion.choices[0].message.content?.trim() || 
+      `Based on the evaluation, we recommend "${recommendation}" for this candidate.`
 
     // Build question evaluations for UI
     const questionEvaluations = qaMapping
@@ -141,7 +200,7 @@ export async function POST(request: Request) {
       .map((qa: any, index: number) => {
         const evaluationData = evaluations[index]
         const wordCount = qa.answer.split(' ').length
-        const durationSeconds = Math.round(wordCount / 2) // ~2 words per second
+        const durationSeconds = Math.round(wordCount / 2)
 
         return {
           question: qa.question,
@@ -152,8 +211,11 @@ export async function POST(request: Request) {
 
     const structuredEvaluation = {
       recommendation,
+      recommendation_rationale: recommendationRationale,
       reasons_to_proceed: reasonsToProceed,
       flags_risks: flagsRisks,
+      reasons_not_to_proceed: reasonsNotToProceed,
+      strengths: strengths,
       question_evaluations: questionEvaluations
     }
 
