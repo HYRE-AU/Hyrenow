@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 export default function DashboardLayout({
   children,
@@ -45,9 +46,16 @@ export default function DashboardLayout({
       <nav className="sticky top-0 z-50 bg-white shadow-sm border-b">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-              HyreNow
-            </h1>
+            <div className="h-10">
+              <Image
+                src="/hyrenow-logo.png"
+                alt="HyreNow"
+                width={165}
+                height={75}
+                className="h-full w-auto"
+                priority
+              />
+            </div>
             <button
               onClick={handleLogout}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
