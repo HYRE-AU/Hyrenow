@@ -46,12 +46,12 @@ export default function DashboardLayout({
       <nav className="sticky top-0 z-50 bg-white shadow-sm border-b">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="h-10">
+            <div className="h-14">
               <Image
                 src="/hyrenow-logo.png"
                 alt="HyreNow"
-                width={165}
-                height={75}
+                width={231}
+                height={105}
                 className="h-full w-auto"
                 priority
               />
