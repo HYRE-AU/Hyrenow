@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         (interview.roles as any).jd_text
       )
 
-      await supabase
+      const { error: insertError } = await supabase
         .from('question_evaluations')
         .insert({
           interview_id: interviewId,
@@ -99,7 +99,16 @@ export async function POST(request: Request) {
           why_not_higher_score: evaluation.why_not_higher_score
         })
 
+      if (insertError) {
+        console.error('Error inserting question evaluation:', insertError)
+      }
+
       evaluations.push(evaluation)
+    }
+
+    // Check if we have any evaluations
+    if (evaluations.length === 0) {
+      throw new Error('No interview questions were evaluated. Please check that interview questions exist for this role.')
     }
 
     // Calculate overall recommendation
@@ -149,7 +158,8 @@ export async function POST(request: Request) {
     }
 
     // Update interview with overall results
-    await supabase
+    console.log('Updating interview with structured evaluation...')
+    const { error: updateError } = await supabase
       .from('interviews')
       .update({
         score: overallScore,
@@ -159,7 +169,14 @@ export async function POST(request: Request) {
       })
       .eq('id', interviewId)
 
-    return NextResponse.json({ 
+    if (updateError) {
+      console.error('Error updating interview with structured evaluation:', updateError)
+      throw new Error(`Failed to save evaluation results: ${updateError.message}`)
+    }
+
+    console.log('Successfully saved structured evaluation to interview')
+
+    return NextResponse.json({
       success: true,
       recommendation,
       score: overallScore
