@@ -43,7 +43,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white shadow-sm border-b">
+      <nav className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="h-14">
