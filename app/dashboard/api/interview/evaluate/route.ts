@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     // Process interview questions (evaluate against BARS)
-    const evaluations = []
+    const evaluations: any[] = []
     for (const qa of qaMapping.filter((q: any) => q.type === 'interview')) {
       const evaluation = await evaluateAgainstBars(
         qa.question,
