@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: Request) {
   try {
-    const { title, jdText, questions } = await request.json()
+    const { title, description, companyName, competencies, questions } = await request.json()
 
     // Get auth header
     const authHeader = request.headers.get('authorization')
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     // Get user from token
     const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    
+
     if (userError || !user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
@@ -44,7 +44,8 @@ export async function POST(request: Request) {
         org_id: profile.org_id,
         created_by: user.id,
         title,
-        jd_text: jdText,
+        jd_text: description,
+        company_name: companyName || null,
         status: 'active',
       })
       .select()
@@ -52,11 +53,38 @@ export async function POST(request: Request) {
 
     if (roleError) throw roleError
 
+    // Create competencies if provided
+    let competencyMap = new Map<string, string>()
+    if (competencies && competencies.length > 0) {
+      const competencyInserts = competencies.map((c: any) => ({
+        role_id: role.id,
+        name: c.name,
+        description: c.description,
+        bars_rubric: c.bars_rubric
+      }))
+
+      const { data: createdCompetencies, error: competenciesError } = await supabase
+        .from('competencies')
+        .insert(competencyInserts)
+        .select()
+
+      if (competenciesError) throw competenciesError
+
+      // Create competency name to ID map
+      competencyMap = new Map(
+        createdCompetencies.map(c => [c.name, c.id])
+      )
+    }
+
     // Create the questions
-    const questionInserts = questions.map((q: string, index: number) => ({
+    const questionInserts = questions.map((q: any) => ({
       role_id: role.id,
-      text: q,
-      order_index: index,
+      text: q.text,
+      order_index: q.order,
+      type: q.type,
+      competency_id: q.type === 'interview' && q.competency_name
+        ? competencyMap.get(q.competency_name)
+        : null,
       source: 'generated',
     }))
 

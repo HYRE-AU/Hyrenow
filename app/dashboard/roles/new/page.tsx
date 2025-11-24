@@ -231,75 +231,35 @@ export default function NewRolePage() {
     try {
       const supabase = createClient()
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
 
-      // Get user's profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('org_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile) throw new Error('Profile not found')
-
-      // Create role
-      const { data: role, error: roleError } = await supabase
-        .from('roles')
-        .insert({
-          org_id: profile.org_id,
-          created_by: user.id,
+      // Call API to create role with competencies and questions
+      const response = await fetch('/api/roles/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
           title,
-          jd_text: description,
-          company_name: companyName || null,
-          status: 'active'
+          description,
+          companyName,
+          competencies,
+          questions: allQuestions
         })
-        .select()
-        .single()
+      })
 
-      if (roleError) throw roleError
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create role')
+      }
 
-      // Create competencies
-      const competencyInserts = competencies.map(c => ({
-        role_id: role.id,
-        name: c.name,
-        description: c.description,
-        bars_rubric: c.bars_rubric
-      }))
-
-      const { data: createdCompetencies, error: competenciesError } = await supabase
-        .from('competencies')
-        .insert(competencyInserts)
-        .select()
-
-      if (competenciesError) throw competenciesError
-
-      // Create competency name to ID map
-      const competencyMap = new Map(
-        createdCompetencies.map(c => [c.name, c.id])
-      )
-
-      // Create questions
-      const questionInserts = allQuestions.map(q => ({
-        role_id: role.id,
-        text: q.text,
-        order_index: q.order,
-        type: q.type,
-        competency_id: q.type === 'interview' 
-          ? competencyMap.get((q as InterviewQuestion).competency_name) 
-          : null,
-        source: 'generated'
-      }))
-
-      const { error: questionsError } = await supabase
-        .from('questions')
-        .insert(questionInserts)
-
-      if (questionsError) throw questionsError
+      const { roleId } = await response.json()
 
       // Redirect to role page
-      router.push(`/dashboard/roles/${role.id}`)
+      router.push(`/dashboard/roles/${roleId}`)
     } catch (error: any) {
       console.error('Error creating role:', error)
       alert('Failed to create role: ' + error.message)
