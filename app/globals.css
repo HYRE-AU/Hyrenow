@@ -1,8 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  /* Brand Colors - Soft Vibrant (Blue to Purple Gradient) */
+  --brand-blue-start: #5B8DEF;      /* Soft Vibrant Blue */
+  --brand-purple-end: #9D6DD9;      /* Soft Vibrant Purple */
+  --brand-light-blue: #7BA5F3;      /* Light Soft Blue */
+  --brand-light-purple: #B88EE8;    /* Light Soft Purple */
+
+  /* Accent Colors - Balanced */
+  --accent-cyan: #4DB8D8;           /* Soft Cyan */
+  --accent-pink: #E896C8;           /* Soft Pink */
+  --accent-amber: #F5C563;          /* Soft Amber */
+
+  /* Background System */
+  --background: #FAFAFA;            /* Warm white */
+  --background-elevated: #FFFFFF;
   --foreground: #171717;
+  --foreground-muted: #737373;      /* Neutral-500 */
+
+  /* Semantic Colors - Balanced Saturation */
+  --success: #47C68D;               /* Soft Emerald */
+  --warning: #F5C563;               /* Soft Amber */
+  --error: #F07B7B;                 /* Soft Red */
+  --info: #5B8DEF;                  /* Soft Blue */
+
+  /* Glassmorphism Design Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg-hover: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px 0 rgba(91, 141, 239, 0.15);
+  --glass-shadow-lg: 0 16px 48px 0 rgba(91, 141, 239, 0.18);
+  --glass-shadow-xl: 0 24px 64px 0 rgba(91, 141, 239, 0.22);
+
+  /* Enhanced Shadow System for Depth */
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-hard: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glow-blue: 0 8px 32px rgba(91, 141, 239, 0.25);
+  --shadow-glow-purple: 0 8px 32px rgba(157, 109, 217, 0.25);
 }
 
 @theme inline {
@@ -10,6 +45,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Custom Brand Colors */
+  --color-brand-blue: var(--brand-blue-start);
+  --color-brand-purple: var(--brand-purple-end);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-pink: var(--accent-pink);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +63,141 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-feature-settings: "kern" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Modern Focus Styles */
+*:focus-visible {
+  outline: 2px solid var(--brand-purple-end);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Selection Color - Brand Purple */
+::selection {
+  background-color: var(--brand-light-purple);
+  color: white;
+}
+
+/* Glassmorphism Utility Classes */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.glass-card-strong {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: var(--glass-shadow-xl);
+}
+
+/* Gradient Mesh Background - Balanced */
+.gradient-mesh {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(91, 141, 239, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(157, 109, 217, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(184, 142, 232, 0.05) 0%, transparent 50%);
+  background-color: #FAFAFA;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out 2s infinite;
+}
+
+/* Shimmer Loading Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Entrance Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.4s ease-out;
+}
+
+/* Enhanced Shadows */
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.shadow-glow-blue {
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.shadow-glow-purple {
+  box-shadow: var(--shadow-glow-purple);
 }

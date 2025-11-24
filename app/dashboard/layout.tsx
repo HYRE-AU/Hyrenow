@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { Home, Sparkles, LogOut } from 'lucide-react'
 
 export default function DashboardLayout({
   children,
@@ -41,11 +42,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex">
+    <div className="min-h-screen gradient-mesh flex">
       {/* Left Sidebar Navigation */}
-      <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
+      <aside className="w-64 glass-card-strong border-r border-white/20 min-h-screen flex flex-col shadow-glow-purple">
         {/* Logo */}
-        <div className="p-6">
+        <div className="p-6 border-b border-gray-200/30">
           <Image
             src="/hyrenow-logo.png"
             alt="HyreNow"
@@ -57,42 +58,51 @@ export default function DashboardLayout({
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 px-4 py-6 space-y-2">
           <button
             onClick={() => router.push('/dashboard')}
-            className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
               isActive('/dashboard')
-                ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-[#5B8DEF] to-[#9D6DD9] text-white shadow-glow-purple scale-[1.02]'
+                : 'text-gray-700 hover:bg-white/50 hover:scale-[1.01]'
             }`}
           >
+            <Home className="w-5 h-5" />
             Home
           </button>
           <button
             onClick={() => router.push('/dashboard/talent-hub')}
-            className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
               isActive('/dashboard/talent-hub')
-                ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-[#5B8DEF] to-[#9D6DD9] text-white shadow-glow-purple scale-[1.02]'
+                : 'text-gray-700 hover:bg-white/50 hover:scale-[1.01]'
             }`}
           >
+            <Sparkles className="w-5 h-5" />
             Talent Hub
           </button>
         </nav>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t border-gray-200">
+        {/* User Info & Logout */}
+        <div className="p-4 border-t border-gray-200/30 space-y-2">
+          {user && (
+            <div className="glass-card px-4 py-3 rounded-xl mb-2">
+              <p className="text-xs text-gray-500 mb-1">Signed in as</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">{user.email}</p>
+            </div>
+          )}
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:text-red-600 hover:bg-red-50/50 rounded-xl transition-all duration-200"
           >
+            <LogOut className="w-5 h-5" />
             Logout
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
     </div>

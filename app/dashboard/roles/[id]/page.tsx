@@ -125,10 +125,11 @@ export default function RoleDetailPage() {
   }, [roleId])
 
   const getRoleStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'closed': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-blue-100 text-blue-800'
+    const normalizedStatus = status.toLowerCase()
+    switch (normalizedStatus) {
+      case 'active': return 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+      case 'closed': return 'bg-gray-100 text-gray-600 border border-gray-200'
+      default: return 'bg-cyan-100 text-cyan-700 border border-cyan-200'
     }
   }
 
@@ -164,17 +165,20 @@ export default function RoleDetailPage() {
   )
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'invited': return 'bg-blue-100 text-blue-800'
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800'
-      case 'completed': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
+    const normalizedStatus = status.toLowerCase()
+    switch (normalizedStatus) {
+      case 'invited': return 'bg-cyan-100 text-cyan-700 border border-cyan-200'
+      case 'in_progress': return 'bg-amber-100 text-amber-700 border border-amber-200'
+      case 'completed': return 'bg-purple-100 text-purple-700 border border-purple-200'
+      case 'rejected': return 'bg-red-100 text-red-700 border border-red-200'
+      case 'progressed': return 'bg-purple-100 text-purple-700 border border-purple-200'
+      default: return 'bg-gray-100 text-gray-600 border border-gray-200'
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
@@ -182,7 +186,7 @@ export default function RoleDetailPage() {
 
   if (!role) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-red-600">Role not found</div>
       </div>
     )
@@ -193,7 +197,7 @@ export default function RoleDetailPage() {
         <div className="mb-8">
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-indigo-600 hover:text-indigo-700 mb-4 flex items-center gap-2"
+            className="text-purple-600 hover:text-purple-700 mb-4 flex items-center gap-2"
           >
             ← Back to Dashboard
           </button>
@@ -216,7 +220,7 @@ export default function RoleDetailPage() {
             </div>
             <button
               onClick={() => router.push(`/dashboard/roles/${roleId}/invite`)}
-              className="bg-gradient-to-r from-indigo-600 to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
+              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200"
             >
               📧 Invite Candidates
             </button>
@@ -249,7 +253,7 @@ export default function RoleDetailPage() {
             <h2 className="text-xl font-bold text-gray-900">Invited Candidates</h2>
             <button
               onClick={() => router.push(`/dashboard/roles/${roleId}/candidates`)}
-              className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-2"
+              className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-2"
             >
               View All Candidates →
             </button>
@@ -306,7 +310,7 @@ export default function RoleDetailPage() {
                         <td className="px-6 py-4">
                           <button
                             onClick={() => interview.candidates && router.push(`/dashboard/candidates/${interview.candidates.id}`)}
-                            className="text-indigo-600 hover:text-indigo-700 font-medium"
+                            className="text-purple-600 hover:text-purple-700 font-medium"
                             disabled={!interview.candidates}
                           >
                             View Profile →
@@ -338,7 +342,7 @@ export default function RoleDetailPage() {
                         onClick={() => setCurrentPage(page)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium ${
                           currentPage === page
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-purple-600 text-white'
                             : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                         }`}
                       >
@@ -367,7 +371,7 @@ export default function RoleDetailPage() {
               onClick={() => setActiveTab('jobDescription')}
               className={`px-6 py-3 font-semibold transition-colors ${
                 activeTab === 'jobDescription'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  ? 'text-purple-600 border-b-2 border-purple-600'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -377,7 +381,7 @@ export default function RoleDetailPage() {
               onClick={() => setActiveTab('questions')}
               className={`px-6 py-3 font-semibold transition-colors ${
                 activeTab === 'questions'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  ? 'text-purple-600 border-b-2 border-purple-600'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -387,7 +391,7 @@ export default function RoleDetailPage() {
               onClick={() => setActiveTab('rubric')}
               className={`px-6 py-3 font-semibold transition-colors ${
                 activeTab === 'rubric'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  ? 'text-purple-600 border-b-2 border-purple-600'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -411,11 +415,11 @@ export default function RoleDetailPage() {
                   className={`p-4 rounded-xl border ${
                     question.type === 'screening'
                       ? 'bg-blue-50 border-blue-200'
-                      : 'bg-gradient-to-r from-indigo-50 to-cyan-50 border-indigo-100'
+                      : 'bg-gradient-to-r from-blue-50 to-purple-50 border-purple-100'
                   }`}
                 >
                   <div className="flex gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-semibold">
+                    <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">
                       {index + 1}
                     </div>
                     <div className="flex-1">
@@ -423,7 +427,7 @@ export default function RoleDetailPage() {
                         <span className={`px-2 py-1 rounded text-xs font-bold ${
                           question.type === 'screening'
                             ? 'bg-blue-100 text-blue-800'
-                            : 'bg-indigo-100 text-indigo-800'
+                            : 'bg-purple-100 text-purple-800'
                         }`}>
                           {question.type === 'screening' ? 'Screening' : 'Interview'}
                         </span>
@@ -441,7 +445,7 @@ export default function RoleDetailPage() {
             <div className="overflow-x-auto -mx-8 px-8">
               <table className="w-full border-collapse min-w-[1200px]">
                 <thead>
-                  <tr className="bg-gradient-to-r from-indigo-50 to-cyan-50">
+                  <tr className="bg-gradient-to-r from-blue-50 to-purple-50">
                     <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900 w-32">
                       Competency
                     </th>

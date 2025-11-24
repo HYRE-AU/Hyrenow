@@ -206,7 +206,7 @@ The ${orgName} Team`
                       </div>
                       <a
                         href={getMailtoLink(candidate)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-500/20"
                       >
                         ✉️ Send Email to {candidate.firstName}
                       </a>
@@ -228,7 +228,7 @@ The ${orgName} Team`
                   setCandidates([{ firstName: '', lastName: '', email: '' }])
                   setStep('input')
                 }}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-lg font-medium hover:shadow-lg"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:shadow-xl hover:shadow-purple-500/20"
               >
                 Invite More Candidates
               </button>
@@ -244,7 +244,7 @@ The ${orgName} Team`
           <div className="mb-8">
             <button
               onClick={() => router.push(`/dashboard/roles/${roleId}`)}
-              className="text-indigo-600 hover:text-indigo-700 flex items-center gap-2"
+              className="text-purple-600 hover:text-purple-700 flex items-center gap-2"
             >
               ← Back to Role
             </button>
@@ -283,7 +283,7 @@ The ${orgName} Team`
                       value={candidate.firstName}
                       onChange={(e) => updateCandidate(index, 'firstName', e.target.value)}
                       placeholder="John"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -295,7 +295,7 @@ The ${orgName} Team`
                       value={candidate.lastName}
                       onChange={(e) => updateCandidate(index, 'lastName', e.target.value)}
                       placeholder="Doe"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -309,7 +309,7 @@ The ${orgName} Team`
                     value={candidate.email}
                     onChange={(e) => updateCandidate(index, 'email', e.target.value)}
                     placeholder="john.doe@email.com"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -318,7 +318,7 @@ The ${orgName} Team`
 
           <button
             onClick={addCandidate}
-            className="w-full mb-6 px-6 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-indigo-400 hover:text-indigo-600 font-medium"
+            className="w-full mb-6 px-6 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-400 hover:text-purple-600 font-medium"
           >
             + Add Another Candidate
           </button>
@@ -326,7 +326,7 @@ The ${orgName} Team`
           <button
             onClick={inviteCandidates}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
           >
             {loading ? 'Inviting Candidates...' : `Invite ${candidates.length} Candidate${candidates.length > 1 ? 's' : ''}`}
           </button>

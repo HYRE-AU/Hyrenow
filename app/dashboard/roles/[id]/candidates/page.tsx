@@ -65,18 +65,21 @@ export default function RoleCandidatesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'invited': return 'bg-blue-100 text-blue-800'
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800'
-      case 'completed': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
+    const normalizedStatus = status.toLowerCase()
+    switch (normalizedStatus) {
+      case 'invited': return 'bg-cyan-100 text-cyan-700 border border-cyan-200'
+      case 'in_progress': return 'bg-amber-100 text-amber-700 border border-amber-200'
+      case 'completed': return 'bg-purple-100 text-purple-700 border border-purple-200'
+      case 'rejected': return 'bg-red-100 text-red-700 border border-red-200'
+      case 'progressed': return 'bg-purple-100 text-purple-700 border border-purple-200'
+      default: return 'bg-gray-100 text-gray-600 border border-gray-200'
     }
   }
 
@@ -85,7 +88,7 @@ export default function RoleCandidatesPage() {
         <div className="mb-8">
           <button
             onClick={() => router.push(`/dashboard/roles/${roleId}`)}
-            className="text-indigo-600 hover:text-indigo-700 mb-4 flex items-center gap-2"
+            className="text-purple-600 hover:text-purple-700 mb-4 flex items-center gap-2"
           >
             ← Back to Role
           </button>
@@ -105,7 +108,7 @@ export default function RoleCandidatesPage() {
               <p className="text-gray-600 mb-6">Invite candidates to start interviewing</p>
               <button
                 onClick={() => router.push(`/dashboard/roles/${roleId}`)}
-                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-200"
               >
                 Invite Candidate
               </button>
@@ -154,7 +157,7 @@ export default function RoleCandidatesPage() {
                       <td className="px-6 py-4">
                         <button
                           onClick={() => interview.candidates && router.push(`/dashboard/candidates/${interview.candidates.id}`)}
-                          className="text-indigo-600 hover:text-indigo-700 font-medium"
+                          className="text-purple-600 hover:text-purple-700 font-medium"
                         >
                           View Profile →
                         </button>

@@ -276,7 +276,7 @@ export default function NewRolePage() {
             <div className="mb-6">
               <button
                 onClick={() => setStep('details')}
-                className="text-indigo-600 hover:text-indigo-700 flex items-center gap-2"
+                className="text-purple-600 hover:text-purple-700 flex items-center gap-2"
               >
                 ← Back to Details
               </button>
@@ -291,7 +291,7 @@ export default function NewRolePage() {
             <div className="overflow-x-auto mb-4">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-gradient-to-r from-indigo-50 to-cyan-50">
+                  <tr className="bg-gradient-to-r from-blue-50 to-purple-50">
                     <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 w-48">
                       Competency
                     </th>
@@ -327,7 +327,7 @@ export default function NewRolePage() {
                           value={comp.name}
                           onChange={(e) => updateCompetency(index, 'name', e.target.value)}
                           placeholder="Competency name"
-                          className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                          className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border border-gray-200 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                           rows={2}
                         />
                       </td>
@@ -336,7 +336,7 @@ export default function NewRolePage() {
                           value={comp.description}
                           onChange={(e) => updateCompetency(index, 'description', e.target.value)}
                           placeholder="Description"
-                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                           rows={3}
                         />
                       </td>
@@ -393,7 +393,7 @@ export default function NewRolePage() {
 
             <button
               onClick={addCompetency}
-              className="w-full mb-4 px-6 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-indigo-400 hover:text-indigo-600 font-medium"
+              className="w-full mb-4 px-6 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-400 hover:text-purple-600 font-medium"
             >
               + Add Competency
             </button>
@@ -401,7 +401,7 @@ export default function NewRolePage() {
             <button
               onClick={generateInterviewQuestions}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
             >
               {loading ? 'Generating Questions...' : 'Continue to Questions'}
             </button>
@@ -418,7 +418,7 @@ export default function NewRolePage() {
             <div className="mb-6">
               <button
                 onClick={() => setStep('competencies')}
-                className="text-indigo-600 hover:text-indigo-700 flex items-center gap-2"
+                className="text-purple-600 hover:text-purple-700 flex items-center gap-2"
               >
                 ← Back to Competencies
               </button>
@@ -435,9 +435,9 @@ export default function NewRolePage() {
                 <div 
                   key={index} 
                   className={`border-2 rounded-lg p-4 flex items-start gap-4 ${
-                    q.type === 'screening' 
-                      ? 'border-blue-200 bg-blue-50' 
-                      : 'border-indigo-200 bg-indigo-50'
+                    q.type === 'screening'
+                      ? 'border-blue-200 bg-blue-50'
+                      : 'border-purple-200 bg-purple-50'
                   }`}
                 >
                   <div className="flex flex-col gap-2">
@@ -461,7 +461,7 @@ export default function NewRolePage() {
                       <span className={`px-2 py-1 rounded text-xs font-bold ${
                         q.type === 'screening'
                           ? 'bg-blue-100 text-blue-800'
-                          : 'bg-indigo-100 text-indigo-800'
+                          : 'bg-purple-100 text-purple-800'
                       }`}>
                         {q.type === 'screening' ? 'Screening' : 'Interview'}
                       </span>
@@ -512,7 +512,7 @@ export default function NewRolePage() {
             <button
               onClick={createRole}
               disabled={loading || allQuestions.length === 0}
-              className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
             >
               {loading ? 'Creating Role...' : 'Create Role'}
             </button>
@@ -531,7 +531,7 @@ export default function NewRolePage() {
           </p>
 
           {/* Job URL Parser */}
-          <div className="mb-8 p-6 bg-indigo-50 rounded-xl border border-indigo-100">
+          <div className="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-100">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               LinkedIn Job URL (Optional)
             </label>
@@ -541,12 +541,12 @@ export default function NewRolePage() {
                 value={jobUrl}
                 onChange={(e) => setJobUrl(e.target.value)}
                 placeholder="https://www.linkedin.com/jobs/view/..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               <button
                 onClick={parseJobUrl}
                 disabled={parsing}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-50"
               >
                 {parsing ? 'Parsing...' : 'Parse'}
               </button>
@@ -566,7 +566,7 @@ export default function NewRolePage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Senior Software Engineer"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
             />
           </div>
@@ -581,7 +581,7 @@ export default function NewRolePage() {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="e.g., Acme Corporation"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
             <p className="text-xs text-gray-500 mt-1">
               This will be used in candidate invitation emails
@@ -598,7 +598,7 @@ export default function NewRolePage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Paste the full job description including responsibilities, requirements, etc."
               rows={12}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
             />
           </div>
@@ -607,7 +607,7 @@ export default function NewRolePage() {
           <button
             onClick={generateCompetencies}
             disabled={loading || !title.trim() || !description.trim()}
-            className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
           >
             {loading ? 'Generating Competency Matrix...' : 'Continue to Competencies'}
           </button>

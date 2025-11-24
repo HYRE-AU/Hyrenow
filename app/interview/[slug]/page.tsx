@@ -209,7 +209,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="text-gray-600">Loading interview...</div>
       </div>
     )
@@ -217,7 +217,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
 
   if (error || !interview) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <div className="text-6xl mb-4">❌</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Interview Link Inactive</h1>
@@ -226,7 +226,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
           </p>
           <p className="text-sm text-gray-500">
             Having issues? Contact{' '}
-            <a href={`mailto:${recruiterEmail}`} className="text-indigo-600 hover:underline">
+            <a href={`mailto:${recruiterEmail}`} className="text-purple-600 hover:underline">
               {recruiterEmail}
             </a>
           </p>
@@ -238,12 +238,12 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   // Step 1: Landing Page
   if (step === 'landing') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-3xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-block px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium mb-4">
+              <div className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
                 Screening Interview
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-3">
@@ -263,10 +263,10 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
             </div>
 
             {/* Welcome Message */}
-            <div className="bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl p-6 mb-6">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6">
               <p className="text-gray-700 leading-relaxed">
-                Hi {interview.candidates.name.split(' ')[0]}! 👋 Welcome to your screening interview. 
-                This is an AI-powered voice interview that helps us get to know you better. A human recruiter 
+                Hi {interview.candidates.name.split(' ')[0]}! 👋 Welcome to your screening interview.
+                This is an AI-powered voice interview that helps us get to know you better. A human recruiter
                 will review your responses and get back to you with next steps.
               </p>
             </div>
@@ -292,9 +292,9 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
             {/* Privacy Notice */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-700">
-                🔒 Your interview will be recorded, transcribed, and reviewed by our hiring team. 
+                🔒 Your interview will be recorded, transcribed, and reviewed by our hiring team.
                 We take your privacy seriously and handle all data in accordance with our{' '}
-                <a href="#" className="text-indigo-600 hover:underline">privacy policy</a>.
+                <a href="#" className="text-purple-600 hover:underline">privacy policy</a>.
               </p>
             </div>
 
@@ -302,13 +302,13 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
             <div className="space-y-3">
               <button
                 onClick={() => setStep('consent')}
-                className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200"
               >
                 Next →
               </button>
               <p className="text-center text-sm text-gray-500">
                 Having issues? Contact{' '}
-                <a href={`mailto:${recruiterEmail}`} className="text-indigo-600 hover:underline">
+                <a href={`mailto:${recruiterEmail}`} className="text-purple-600 hover:underline">
                   {recruiterEmail}
                 </a>
               </p>
@@ -322,7 +322,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   // Step 2: Consent Page
   if (step === 'consent') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Header */}
@@ -337,7 +337,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
             </div>
 
             {/* Consent Explanation */}
-            <div className="bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl p-6 mb-6">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6">
               <h3 className="font-semibold text-gray-900 mb-3">What happens during this interview:</h3>
               <ul className="space-y-2 text-gray-700">
                 <li className="flex gap-3">
@@ -366,12 +366,12 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
                   type="checkbox"
                   checked={consentChecked}
                   onChange={(e) => setConsentChecked(e.target.checked)}
-                  className="w-6 h-6 mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  className="w-6 h-6 mt-1 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
                 />
                 <span className="text-gray-700 leading-relaxed">
-                  I consent to the recording, transcription, and processing of my interview for recruitment purposes. 
+                  I consent to the recording, transcription, and processing of my interview for recruitment purposes.
                   I understand that a human will review my interview and that my data will be handled according to the{' '}
-                  <a href="#" className="text-indigo-600 hover:underline">privacy policy</a>.
+                  <a href="#" className="text-purple-600 hover:underline">privacy policy</a>.
                 </span>
               </label>
             </div>
@@ -387,7 +387,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
               <button
                 onClick={() => setStep('preparation')}
                 disabled={!consentChecked}
-                className="flex-1 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue →
               </button>
@@ -401,7 +401,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   // Step 3: Preparation Page
   if (step === 'preparation') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Header */}
@@ -428,21 +428,21 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
             <div className="mb-8">
               <h3 className="font-semibold text-gray-900 mb-4">Quick Tips:</h3>
               <div className="space-y-3">
-                <div className="flex gap-4 p-4 bg-indigo-50 rounded-lg">
+                <div className="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <span className="text-2xl">🔇</span>
                   <div>
                     <p className="font-medium text-gray-900">Find a quiet place</p>
                     <p className="text-sm text-gray-600">Minimize background noise for the best experience</p>
                   </div>
                 </div>
-                <div className="flex gap-4 p-4 bg-indigo-50 rounded-lg">
+                <div className="flex gap-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
                   <span className="text-2xl">💭</span>
                   <div>
                     <p className="font-medium text-gray-900">Take your time</p>
                     <p className="text-sm text-gray-600">It's okay to pause and think before answering</p>
                   </div>
                 </div>
-                <div className="flex gap-4 p-4 bg-indigo-50 rounded-lg">
+                <div className="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <span className="text-2xl">🎧</span>
                   <div>
                     <p className="font-medium text-gray-900">Use headphones if possible</p>
@@ -476,27 +476,27 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   // Step 4: Active Interview
   if (step === 'interview') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {callState === 'connecting' && (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">Connecting to interview...</p>
               </div>
             )}
 
             {callState === 'active' && (
               <div className="text-center py-12">
-                <div className="w-32 h-32 bg-gradient-to-r from-indigo-600 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <div className="w-32 h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse shadow-xl shadow-purple-500/30">
                   <span className="text-5xl text-white">🎙️</span>
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-3">Interview in Progress</h2>
                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
                   The AI interviewer is speaking with you. Speak clearly and take your time with your answers.
                 </p>
-                
-                <div className="bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl p-6 mb-6">
+
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border border-purple-100">
                   <p className="text-sm text-gray-700">
                     💡 <strong>Tip:</strong> Treat this like a conversation with a real person. Be natural and authentic!
                   </p>
@@ -525,7 +525,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   // Step 5: Completed - Survey Submitted
   if (step === 'completed' && surveySubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
             <div className="text-6xl mb-6">🙏</div>
@@ -548,7 +548,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   // Step 5: Completed - Show Survey
   if (step === 'completed') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Completion Message */}
@@ -560,7 +560,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
               </p>
             </div>
             
-            <div className="bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-xl p-6 mb-8">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8">
               <h3 className="font-semibold text-gray-900 mb-3">What happens next?</h3>
               <ul className="text-left space-y-2 text-gray-700">
                 <li className="flex gap-3">
@@ -597,7 +597,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
                       onClick={() => setSurveyRating(rating)}
                       className={`w-16 h-16 rounded-full text-2xl font-bold transition-all ${
                         surveyRating === rating
-                          ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white scale-110 shadow-lg'
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white scale-110 shadow-xl shadow-purple-500/30'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -621,7 +621,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
                   value={surveyFeedback}
                   onChange={(e) => setSurveyFeedback(e.target.value)}
                   placeholder="Your suggestions..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   maxLength={500}
                 />
               </div>
@@ -630,7 +630,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
               <button
                 onClick={submitSurvey}
                 disabled={!surveyRating || surveyLoading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {surveyLoading ? 'Submitting...' : 'Submit & Close'}
               </button>
