@@ -23,6 +23,7 @@ export async function GET(
           id,
           title,
           jd_text,
+          company_name,
           organisations (
             name
           )

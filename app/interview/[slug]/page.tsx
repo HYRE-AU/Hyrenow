@@ -12,6 +12,7 @@ type Interview = {
     id: string
     title: string
     jd_text: string
+    company_name: string | null
     organisations: {
       name: string
     }
@@ -107,7 +108,7 @@ export default function InterviewPage() {
           messages: [
             {
               role: 'system',
-              content: `You are a professional AI interviewer conducting an interview for the position of ${interview.roles.title} at ${interview.roles.organisations.name}.
+              content: `You are a professional AI interviewer conducting an interview for the position of ${interview.roles.title} at ${interview.roles.company_name || interview.roles.organisations.name}.
 
 The candidate's name is ${interview.candidates.name}. Address them by their first name (${interview.candidates.name.split(' ')[0]}) throughout the interview.
 
@@ -249,7 +250,7 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
                 {interview.roles.title}
               </h1>
               <p className="text-xl text-gray-600 mb-4">
-                at {interview.roles.organisations.name}
+                at {interview.roles.company_name || interview.roles.organisations.name}
               </p>
               <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
                 <span className="flex items-center gap-2">
