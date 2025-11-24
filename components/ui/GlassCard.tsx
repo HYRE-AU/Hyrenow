@@ -6,6 +6,7 @@ interface GlassCardProps {
   hover?: boolean;
   strong?: boolean;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 export function GlassCard({
@@ -13,7 +14,8 @@ export function GlassCard({
   className = '',
   hover = false,
   strong = false,
-  onClick
+  onClick,
+  style
 }: GlassCardProps) {
   const baseClass = strong ? 'glass-card-strong' : 'glass-card';
   const hoverClass = hover ? 'hover:scale-[1.02] cursor-pointer' : '';
@@ -23,6 +25,7 @@ export function GlassCard({
     <div
       className={`${baseClass} ${hoverClass} ${transitionClass} rounded-2xl ${className}`}
       onClick={onClick}
+      style={style}
     >
       {children}
     </div>
