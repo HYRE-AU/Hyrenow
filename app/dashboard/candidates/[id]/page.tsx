@@ -32,6 +32,7 @@ type Interview = {
   structured_evaluation: any | null
   transcript: any | null
   duration_seconds: number | null
+  recording_url: string | null  // <-- ADD THIS LINE
   roles: {
     id: string
     title: string
@@ -67,30 +68,31 @@ export default function CandidateProfilePage() {
           return
         }
 
-        const { data: interviewsData, error: interviewsError } = await supabase
-          .from('interviews')
-          .select(`
-            id,
-            status,
-            created_at,
-            slug,
-            started_at,
-            completed_at,
-            progressed_at,
-            rejected_at,
-            score,
-            recommendation,
-            structured_evaluation,
-            transcript,
-            duration_seconds,
-            roles (
-              id,
-              title,
-              company_name
-            )
-          `)
-          .eq('candidate_id', candidateId)
-          .order('created_at', { ascending: false })
+const { data: interviewsData, error: interviewsError } = await supabase
+  .from('interviews')
+  .select(`
+    id,
+    status,
+    created_at,
+    slug,
+    started_at,
+    completed_at,
+    progressed_at,
+    rejected_at,
+    score,
+    recommendation,
+    structured_evaluation,
+    transcript,
+    duration_seconds,
+    recording_url,
+    roles (
+      id,
+      title,
+      company_name
+    )
+  `)
+  .eq('candidate_id', candidateId)
+  .order('created_at', { ascending: false })
 
         if (interviewsError) {
           console.error('Error fetching interviews:', interviewsError)
@@ -587,8 +589,29 @@ export default function CandidateProfilePage() {
                               </div>
                             </div>
                           )}
+                          {/* Audio Recording */}
+{interview.recording_url && (
+  <GlassCard className="p-4 bg-gradient-to-r from-purple-50/50 to-blue-50/50">
+    <div className="flex items-center justify-between mb-3">
+      <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        🎧 Interview Recording
+      </h4>
+      <span className="text-xs text-gray-500 bg-white/50 px-2 py-1 rounded-full">
+        Listen to assess communication quality
+      </span>
+    </div>
+    <audio 
+      controls 
+      src={interview.recording_url}
+      className="w-full"
+      preload="metadata"
+    >
+      Your browser does not support the audio element.
+    </audio>
+  </GlassCard>
+)}
 
-                          {/* Transcript */}
+{/* Transcript */}
                           {interview.transcript && (
                             <GlassCard className="p-4">
                               <details>

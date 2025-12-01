@@ -19,6 +19,8 @@ export async function GET(
         id,
         status,
         slug,
+        screened_out_at,
+        screened_out_reason,
         roles (
           id,
           title,
@@ -46,9 +48,17 @@ export async function GET(
       .eq('role_id', roleId)
       .order('order_index')
 
+    // Fetch knockout questions for this role
+    const { data: knockoutQuestions } = await supabase
+      .from('knockout_questions')
+      .select('id, question_text, required_answer, order_index')
+      .eq('role_id', roleId)
+      .order('order_index')
+
     return NextResponse.json({
       ...interview,
-      questions
+      questions,
+      knockoutQuestions: knockoutQuestions || []
     })
   } catch (error: any) {
     return NextResponse.json(

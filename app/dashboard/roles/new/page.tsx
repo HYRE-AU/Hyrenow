@@ -30,7 +30,13 @@ type ScreeningQuestion = {
 
 type Question = InterviewQuestion | ScreeningQuestion
 
-type Step = 'details' | 'competencies' | 'questions' | 'review'
+type KnockoutQuestion = {
+  question_text: string
+  required_answer: boolean
+  order_index: number
+}
+
+type Step = 'details' | 'competencies' | 'questions' | 'knockout' | 'review'
 
 export default function NewRolePage() {
   const [step, setStep] = useState<Step>('details')
@@ -51,6 +57,11 @@ export default function NewRolePage() {
   const [screeningQuestions, setScreeningQuestions] = useState<ScreeningQuestion[]>([])
   const [newScreeningQuestion, setNewScreeningQuestion] = useState('')
   const [allQuestions, setAllQuestions] = useState<Question[]>([])
+  
+  // Step 4: Knockout Questions
+  const [knockoutQuestions, setKnockoutQuestions] = useState<KnockoutQuestion[]>([])
+  const [newKnockoutQuestion, setNewKnockoutQuestion] = useState('')
+  const [newKnockoutRequiredAnswer, setNewKnockoutRequiredAnswer] = useState(true)
   
   const router = useRouter()
 
@@ -220,23 +231,62 @@ export default function NewRolePage() {
 
   function removeCompetency(index: number) {
     if (competencies.length <= 1) {
-      alert('You must have at least one competency')
+      alert('You need at least one competency')
       return
     }
     setCompetencies(competencies.filter((_, i) => i !== index))
+  }
+
+  // Knockout Question Functions
+  function addKnockoutQuestion() {
+    if (!newKnockoutQuestion.trim()) return
+    
+    const newKQ: KnockoutQuestion = {
+      question_text: newKnockoutQuestion,
+      required_answer: newKnockoutRequiredAnswer,
+      order_index: knockoutQuestions.length
+    }
+    
+    setKnockoutQuestions([...knockoutQuestions, newKQ])
+    setNewKnockoutQuestion('')
+    setNewKnockoutRequiredAnswer(true)
+  }
+
+  function removeKnockoutQuestion(index: number) {
+    const updated = knockoutQuestions.filter((_, i) => i !== index)
+    setKnockoutQuestions(updated.map((kq, i) => ({ ...kq, order_index: i })))
+  }
+
+  function moveKnockoutQuestion(index: number, direction: 'up' | 'down') {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === knockoutQuestions.length - 1)
+    ) {
+      return
+    }
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    const updated = [...knockoutQuestions]
+    const temp = updated[index]
+    updated[index] = updated[newIndex]
+    updated[newIndex] = temp
+
+    setKnockoutQuestions(updated.map((kq, i) => ({ ...kq, order_index: i })))
   }
 
   async function createRole() {
     setLoading(true)
     try {
       const supabase = createClient()
-
-      // Get current user session
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Not authenticated')
 
-      // Call API to create role with competencies and questions
-      const response = await fetch('/api/roles/create', {
+      if (!session) {
+        alert('Please log in')
+        router.push('/login')
+        return
+      }
+
+const response = await fetch('/api/roles/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -247,28 +297,23 @@ export default function NewRolePage() {
           description,
           companyName,
           competencies,
-          questions: allQuestions
+          questions: allQuestions,
+          knockoutQuestions
         })
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create role')
-      }
+      if (!response.ok) throw new Error('Failed to create role')
 
-      const { roleId } = await response.json()
-
-      // Redirect to role page
-      router.push(`/dashboard/roles/${roleId}`)
-    } catch (error: any) {
-      console.error('Error creating role:', error)
-      alert('Failed to create role: ' + error.message)
+      const data = await response.json()
+      router.push(`/dashboard/roles/${data.roleId}`)
+    } catch (error) {
+      alert('Failed to create role')
     } finally {
       setLoading(false)
     }
   }
 
-  // STEP 2: Competencies Review
+  // STEP 2: Competencies
   if (step === 'competencies') {
     return (
       <div className="px-4 sm:px-6 lg:px-8 py-8">
@@ -282,113 +327,68 @@ export default function NewRolePage() {
               </button>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Competency Matrix</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Competency Matrix</h1>
             <p className="text-gray-600 mb-8">
-              These competencies with BARS rubrics will be used to evaluate candidates
+              Review and customize the competencies used to evaluate candidates
             </p>
 
-            {/* Competency Table */}
-            <div className="overflow-x-auto mb-4">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gradient-to-r from-blue-50 to-purple-50">
-                    <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 w-48">
-                      Competency
-                    </th>
-                    <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 w-40">
+            <div className="space-y-6 mb-6">
+              {competencies.map((comp, index) => (
+                <div key={index} className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1 mr-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Competency Name
+                      </label>
+                      <input
+                        type="text"
+                        value={comp.name}
+                        onChange={(e) => updateCompetency(index, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <button
+                      onClick={() => removeCompetency(index)}
+                      className="text-red-500 hover:text-red-700 px-3 py-2"
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Description
-                    </th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
-                      <div>Level 1</div>
-                      <div className="text-xs font-semibold text-red-700 mt-1">Below Expectations</div>
-                    </th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
-                      <div>Level 2</div>
-                      <div className="text-xs font-semibold text-yellow-700 mt-1">Meets Expectations</div>
-                    </th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
-                      <div>Level 3</div>
-                      <div className="text-xs font-semibold text-blue-700 mt-1">Exceeds Expectations</div>
-                    </th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
-                      <div>Level 4</div>
-                      <div className="text-xs font-semibold text-green-700 mt-1">Outstanding</div>
-                    </th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900 w-20">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {competencies.map((comp, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-2 py-2">
-                        <textarea
-                          value={comp.name}
-                          onChange={(e) => updateCompetency(index, 'name', e.target.value)}
-                          placeholder="Competency name"
-                          className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border border-gray-200 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                          rows={2}
-                        />
-                      </td>
-                      <td className="border border-gray-300 px-2 py-2">
-                        <textarea
-                          value={comp.description}
-                          onChange={(e) => updateCompetency(index, 'description', e.target.value)}
-                          placeholder="Description"
-                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                          rows={3}
-                        />
-                      </td>
-                      <td className="border border-gray-300 px-2 py-2 bg-red-50">
-                        <textarea
-                          value={comp.bars_rubric.level_1.description}
-                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_1', e.target.value)}
-                          placeholder="Below expectations description"
-                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none bg-white"
-                          rows={4}
-                        />
-                      </td>
-                      <td className="border border-gray-300 px-2 py-2 bg-yellow-50">
-                        <textarea
-                          value={comp.bars_rubric.level_2.description}
-                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_2', e.target.value)}
-                          placeholder="Meets expectations description"
-                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none bg-white"
-                          rows={4}
-                        />
-                      </td>
-                      <td className="border border-gray-300 px-2 py-2 bg-blue-50">
-                        <textarea
-                          value={comp.bars_rubric.level_3.description}
-                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_3', e.target.value)}
-                          placeholder="Exceeds expectations description"
-                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white"
-                          rows={4}
-                        />
-                      </td>
-                      <td className="border border-gray-300 px-2 py-2 bg-green-50">
-                        <textarea
-                          value={comp.bars_rubric.level_4.description}
-                          onChange={(e) => updateCompetency(index, 'bars_rubric.level_4', e.target.value)}
-                          placeholder="Outstanding description"
-                          className="w-full px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
-                          rows={4}
-                        />
-                      </td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">
-                        <button
-                          onClick={() => removeCompetency(index)}
-                          className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                          title="Remove competency"
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </label>
+                    <textarea
+                      value={comp.description}
+                      onChange={(e) => updateCompetency(index, 'description', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+
+                  <details className="mt-4">
+                    <summary className="text-sm font-semibold text-purple-700 cursor-pointer">
+                      View BARS Rubric (Scoring Levels)
+                    </summary>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(['level_1', 'level_2', 'level_3', 'level_4'] as const).map((level) => (
+                        <div key={level} className="bg-white p-3 rounded-lg border">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">
+                            {comp.bars_rubric[level].label}
+                          </label>
+                          <textarea
+                            value={comp.bars_rubric[level].description}
+                            onChange={(e) => updateCompetency(index, `bars_rubric.${level}`, e.target.value)}
+                            rows={2}
+                            className="w-full px-2 py-1 text-sm border border-gray-200 rounded"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+              ))}
             </div>
 
             <button
@@ -508,13 +508,184 @@ export default function NewRolePage() {
               </div>
             </div>
 
+            {/* Continue to Knockout */}
+            <button
+              onClick={() => setStep('knockout')}
+              disabled={allQuestions.length === 0}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+            >
+              Continue to Pre-Screening
+            </button>
+          </div>
+      </div>
+    )
+  }
+
+  // STEP 4: Knockout Questions
+  if (step === 'knockout') {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div className="mb-6">
+              <button
+                onClick={() => setStep('questions')}
+                className="text-purple-600 hover:text-purple-700 flex items-center gap-2"
+              >
+                ← Back to Questions
+              </button>
+            </div>
+
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Pre-Screening Questions</h1>
+            <p className="text-gray-600 mb-2">
+              Add yes/no questions to filter out candidates who don't meet basic requirements.
+            </p>
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-8">
+              ⚡ Candidates who fail these questions will be politely rejected before the voice interview, saving you time and AI costs.
+            </p>
+
+            {/* Existing Knockout Questions */}
+            {knockoutQuestions.length > 0 && (
+              <div className="space-y-4 mb-6">
+                {knockoutQuestions.map((kq, index) => (
+                  <div 
+                    key={index} 
+                    className="border-2 border-amber-200 bg-amber-50 rounded-lg p-4 flex items-start gap-4"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => moveKnockoutQuestion(index, 'up')}
+                        disabled={index === 0}
+                        className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => moveKnockoutQuestion(index, 'down')}
+                        disabled={index === knockoutQuestions.length - 1}
+                        className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-1 rounded text-xs font-bold bg-amber-100 text-amber-800">
+                          Pre-Screen
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          kq.required_answer 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          Must answer: {kq.required_answer ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <p className="text-gray-900">{kq.question_text}</p>
+                    </div>
+                    <button
+                      onClick={() => removeKnockoutQuestion(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Knockout Question */}
+            <div className="border-2 border-dashed border-amber-300 rounded-lg p-4 mb-8 bg-amber-50">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Add Pre-Screening Question
+              </label>
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  value={newKnockoutQuestion}
+                  onChange={(e) => setNewKnockoutQuestion(e.target.value)}
+                  placeholder="e.g., Do you have permanent working rights in Malaysia?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  onKeyDown={(e) => e.key === 'Enter' && addKnockoutQuestion()}
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-600">Candidate must answer:</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setNewKnockoutRequiredAnswer(true)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          newKnockoutRequiredAnswer
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Yes ✓
+                      </button>
+                      <button
+                        onClick={() => setNewKnockoutRequiredAnswer(false)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          !newKnockoutRequiredAnswer
+                            ? 'bg-red-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        No ✗
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    onClick={addKnockoutQuestion}
+                    className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                  >
+                    Add Question
+                  </button>
+                </div>
+              </div>
+              
+              {/* Example Questions */}
+              <div className="mt-4 pt-4 border-t border-amber-200">
+                <p className="text-xs text-gray-500 mb-2">Example questions (click to use):</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { text: 'Do you have permanent working rights in Malaysia without sponsorship?', answer: true },
+                    { text: 'Are you currently based in Malaysia or willing to relocate?', answer: true },
+                    { text: 'Are you open to a salary range of 8,000-9,000 MYR?', answer: true },
+                    { text: 'Do you have at least 2 years of agency experience?', answer: true },
+                    { text: 'Will you require visa sponsorship?', answer: false },
+                  ].map((example, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setNewKnockoutQuestion(example.text)
+                        setNewKnockoutRequiredAnswer(example.answer)
+                      }}
+                      className="text-xs px-3 py-1.5 bg-white border border-amber-200 rounded-full hover:bg-amber-100 text-gray-700"
+                    >
+                      {example.text.substring(0, 40)}...
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h4 className="font-semibold text-blue-900 mb-2">💡 How Pre-Screening Works</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Candidates see these questions before starting the voice interview</li>
+                <li>• If they fail any question, they get a polite rejection message</li>
+                <li>• Only candidates who pass all questions proceed to the AI interview</li>
+                <li>• This saves your time and AI interview costs</li>
+              </ul>
+            </div>
+
             {/* Create Role */}
             <button
               onClick={createRole}
-              disabled={loading || allQuestions.length === 0}
+              disabled={loading}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
             >
-              {loading ? 'Creating Role...' : 'Create Role'}
+              {loading ? 'Creating Role...' : knockoutQuestions.length > 0 ? 'Create Role with Pre-Screening' : 'Create Role (No Pre-Screening)'}
             </button>
           </div>
       </div>

@@ -4,10 +4,19 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Vapi from '@vapi-ai/web'
 
+type KnockoutQuestion = {
+  id: string
+  question_text: string
+  required_answer: boolean
+  order_index: number
+}
+
 type Interview = {
   id: string
   status: string
   slug: string
+  screened_out_at: string | null
+  screened_out_reason: string | null
   roles: {
     id: string
     title: string
@@ -25,9 +34,10 @@ type Interview = {
     text: string
     order_index: number
   }>
+  knockoutQuestions: KnockoutQuestion[]
 }
 
-type Step = 'landing' | 'consent' | 'preparation' | 'interview' | 'completed'
+type Step = 'knockout' | 'landing' | 'consent' | 'preparation' | 'interview' | 'completed' | 'screened_out'
 
 export default function InterviewPage() {
   const params = useParams()
@@ -44,6 +54,10 @@ export default function InterviewPage() {
   const [recruiterEmail, setRecruiterEmail] = useState('support@hyrenow.com')
   const vapiCallIdRef = useRef<string | null>(null)
   
+  // Knockout states
+  const [knockoutResponses, setKnockoutResponses] = useState<Record<string, boolean | null>>({})
+  const [knockoutSubmitting, setKnockoutSubmitting] = useState(false)
+  
   // Survey states
   const [surveySubmitted, setSurveySubmitted] = useState(false)
   const [surveyRating, setSurveyRating] = useState<number | null>(null)
@@ -57,9 +71,19 @@ export default function InterviewPage() {
         if (!res.ok) throw new Error('Interview not found')
         const data = await res.json()
         
-        // Check if already completed
+        // Set initial step based on status and knockout questions
         if (data.status === 'completed') {
           setStep('completed')
+        } else if (data.status === 'screened_out') {
+          setStep('screened_out')
+        } else if (data.knockoutQuestions && data.knockoutQuestions.length > 0) {
+          setStep('knockout')
+          // Initialize knockout responses
+          const initialResponses: Record<string, boolean | null> = {}
+          data.knockoutQuestions.forEach((kq: KnockoutQuestion) => {
+            initialResponses[kq.id] = null
+          })
+          setKnockoutResponses(initialResponses)
         }
         
         setInterview(data)
@@ -80,6 +104,46 @@ export default function InterviewPage() {
       vapiInstance.stop()
     }
   }, [slug])
+
+  async function submitKnockout() {
+    if (!interview) return
+    
+    // Check all questions are answered
+    const unanswered = Object.values(knockoutResponses).some(v => v === null)
+    if (unanswered) {
+      alert('Please answer all questions')
+      return
+    }
+
+    setKnockoutSubmitting(true)
+    try {
+      const responses = Object.entries(knockoutResponses).map(([knockoutQuestionId, answer]) => ({
+        knockoutQuestionId,
+        answer
+      }))
+
+      const res = await fetch('/api/interview/knockout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewId: interview.id,
+          responses
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.passed) {
+        setStep('landing')
+      } else {
+        setStep('screened_out')
+      }
+    } catch (err) {
+      alert('Failed to submit. Please try again.')
+    } finally {
+      setKnockoutSubmitting(false)
+    }
+  }
 
   async function startInterview() {
     if (!vapi || !interview) return
@@ -215,21 +279,128 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
     )
   }
 
-  if (error || !interview) {
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-        <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <div className="text-6xl mb-4">❌</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Interview Link Inactive</h1>
-          <p className="text-gray-600 mb-6">
-            This interview link isn't active. Please ask your recruiter for a new link.
-          </p>
-          <p className="text-sm text-gray-500">
-            Having issues? Contact{' '}
-            <a href={`mailto:${recruiterEmail}`} className="text-purple-600 hover:underline">
-              {recruiterEmail}
-            </a>
-          </p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
+          <div className="text-red-500 text-xl font-semibold">{error}</div>
+        </div>
+      </div>
+    )
+  }
+
+  // SCREENED OUT - Polite Rejection Page
+  if (step === 'screened_out') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <div className="max-w-2xl mx-auto py-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
+            <div className="text-6xl mb-6">🙏</div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              Thank You for Your Interest
+            </h1>
+            <p className="text-gray-600 text-lg mb-6">
+              We appreciate you taking the time to apply for the{' '}
+              <strong>{interview?.roles.title}</strong> position at{' '}
+              <strong>{interview?.roles.company_name || interview?.roles.organisations.name}</strong>.
+            </p>
+            
+            <div className="bg-gray-50 rounded-xl p-6 mb-6 text-left">
+              <p className="text-gray-700 mb-4">
+                After reviewing your responses to our initial screening questions, we've determined that this particular role may not be the best match for your current situation.
+              </p>
+              <p className="text-gray-700">
+                This decision is based solely on the specific requirements for this position and is not a reflection of your overall qualifications or experience.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 rounded-xl p-6 text-left">
+              <h3 className="font-semibold text-blue-900 mb-2">What's Next?</h3>
+              <ul className="text-blue-800 space-y-2 text-sm">
+                <li>• We encourage you to apply for other roles that may better match your profile</li>
+                <li>• Keep an eye on new opportunities that may become available</li>
+                <li>• We wish you the very best in your job search</li>
+              </ul>
+            </div>
+
+            <p className="text-gray-500 text-sm mt-6">
+              You may now close this window.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // KNOCKOUT SCREENING STEP
+  if (step === 'knockout' && interview?.knockoutQuestions && interview.knockoutQuestions.length > 0) {
+    const allAnswered = Object.values(knockoutResponses).every(v => v !== null)
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <div className="max-w-2xl mx-auto py-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="text-4xl mb-4">📋</div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Quick Eligibility Check
+              </h1>
+              <p className="text-gray-600">
+                Before we begin, please answer a few quick questions about the{' '}
+                <strong>{interview.roles.title}</strong> position.
+              </p>
+            </div>
+
+            {/* Questions */}
+            <div className="space-y-6 mb-8">
+              {interview.knockoutQuestions.map((kq, index) => (
+                <div 
+                  key={kq.id}
+                  className="bg-gray-50 rounded-xl p-6 border border-gray-200"
+                >
+                  <p className="text-gray-900 font-medium mb-4">
+                    {index + 1}. {kq.question_text}
+                  </p>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setKnockoutResponses(prev => ({ ...prev, [kq.id]: true }))}
+                      className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+                        knockoutResponses[kq.id] === true
+                          ? 'bg-green-600 text-white shadow-lg shadow-green-500/30'
+                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-green-400'
+                      }`}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setKnockoutResponses(prev => ({ ...prev, [kq.id]: false }))}
+                      className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+                        knockoutResponses[kq.id] === false
+                          ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-red-400'
+                      }`}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Submit */}
+            <button
+              onClick={submitKnockout}
+              disabled={!allAnswered || knockoutSubmitting}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {knockoutSubmitting ? 'Checking...' : 'Continue'}
+            </button>
+
+            <p className="text-center text-gray-500 text-sm mt-4">
+              These questions help us ensure this role is a good match for you.
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -239,141 +410,116 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
   if (step === 'landing') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-        <div className="max-w-3xl mx-auto py-8">
+        <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
-                Screening Interview
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                  <span className="text-3xl text-white">🎙️</span>
+                </div>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                {interview.roles.title}
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome, {interview?.candidates.name.split(' ')[0]}!
               </h1>
-              <p className="text-xl text-gray-600 mb-4">
-                at {interview.roles.company_name || interview.roles.organisations.name}
-              </p>
-              <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
-                <span className="flex items-center gap-2">
-                  ⏱️ Takes ~15–20 minutes
-                </span>
-                <span className="flex items-center gap-2">
-                  🎙️ Recorded for assessment
-                </span>
-              </div>
-            </div>
-
-            {/* Welcome Message */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6">
-              <p className="text-gray-700 leading-relaxed">
-                Hi {interview.candidates.name.split(' ')[0]}! 👋 Welcome to your screening interview.
-                This is an AI-powered voice interview that helps us get to know you better. A human recruiter
-                will review your responses and get back to you with next steps.
+              <p className="text-gray-600 text-lg">
+                You've been invited to interview for
               </p>
             </div>
 
-            {/* Job Description */}
-            <div className="border border-gray-200 rounded-xl mb-6">
+            {/* Role Info */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border border-purple-100">
+              <h2 className="text-xl font-bold text-gray-900">{interview?.roles.title}</h2>
+              <p className="text-gray-600">
+                {interview?.roles.company_name || interview?.roles.organisations.name}
+              </p>
+            </div>
+
+            {/* Job Description Toggle */}
+            <div className="mb-6">
               <button
                 onClick={() => setShowJD(!showJD)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center gap-2"
               >
-                <span className="font-semibold text-gray-900">📋 Job Description</span>
-                <span className="text-gray-500">{showJD ? '▼' : '▶'}</span>
+                {showJD ? '▼ Hide' : '▶ View'} Job Description
               </button>
               {showJD && (
-                <div className="px-6 pb-6 pt-2 border-t border-gray-200">
-                  <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
-                    {interview.roles.jd_text}
-                  </p>
+                <div className="mt-3 p-4 bg-gray-50 rounded-lg text-sm text-gray-700 max-h-64 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap font-sans">{interview?.roles.jd_text}</pre>
                 </div>
               )}
             </div>
 
-            {/* Privacy Notice */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700">
-                🔒 Your interview will be recorded, transcribed, and reviewed by our hiring team.
-                We take your privacy seriously and handle all data in accordance with our{' '}
-                <a href="#" className="text-purple-600 hover:underline">privacy policy</a>.
-              </p>
+            {/* What to Expect */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">What to expect:</h3>
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex gap-3">
+                  <span className="text-purple-600">✓</span>
+                  <span>{interview?.questions.length} questions, approximately 10-15 minutes</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-purple-600">✓</span>
+                  <span>AI-powered voice interview - speak naturally</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-purple-600">✓</span>
+                  <span>Your responses will be reviewed by the hiring team</span>
+                </li>
+              </ul>
             </div>
 
-            {/* CTAs */}
-            <div className="space-y-3">
-              <button
-                onClick={() => setStep('consent')}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200"
-              >
-                Next →
-              </button>
-              <p className="text-center text-sm text-gray-500">
-                Having issues? Contact{' '}
-                <a href={`mailto:${recruiterEmail}`} className="text-purple-600 hover:underline">
-                  {recruiterEmail}
-                </a>
-              </p>
-            </div>
+            {/* CTA */}
+            <button
+              onClick={() => setStep('consent')}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200"
+            >
+              Let's Get Started →
+            </button>
           </div>
         </div>
       </div>
     )
   }
 
-  // Step 2: Consent Page
+  // Step 2: Consent
   if (step === 'consent') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">✅</div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Before We Begin
-              </h1>
-              <p className="text-gray-600">
-                We need your consent to proceed with the interview
+            <h1 className="text-2xl font-bold text-gray-900 mb-6">Before We Begin</h1>
+
+            {/* Privacy Notice */}
+            <div className="bg-blue-50 rounded-xl p-6 mb-6 border border-blue-100">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                🔒 Privacy & Recording Notice
+              </h3>
+              <p className="text-gray-700 text-sm mb-4">
+                This interview will be recorded and transcribed for review by the hiring team.
+                Your data will be handled in accordance with applicable privacy laws.
               </p>
-            </div>
-
-            {/* Consent Explanation */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-3">What happens during this interview:</h3>
-              <ul className="space-y-2 text-gray-700">
-                <li className="flex gap-3">
-                  <span>🎙️</span>
-                  <span>Your voice responses will be recorded and transcribed</span>
-                </li>
-                <li className="flex gap-3">
-                  <span>🤖</span>
-                  <span>An AI interviewer will ask you questions about your experience</span>
-                </li>
-                <li className="flex gap-3">
-                  <span>👤</span>
-                  <span>A human recruiter will review your interview and make the hiring decision</span>
-                </li>
-                <li className="flex gap-3">
-                  <span>🔒</span>
-                  <span>Your data is processed securely and used only for recruitment purposes</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Consent Checkbox */}
-            <div className="border-2 border-gray-200 rounded-xl p-6 mb-6">
-              <label className="flex gap-4 cursor-pointer">
+              <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={consentChecked}
                   onChange={(e) => setConsentChecked(e.target.checked)}
-                  className="w-6 h-6 mt-1 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                  className="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                 />
-                <span className="text-gray-700 leading-relaxed">
-                  I consent to the recording, transcription, and processing of my interview for recruitment purposes.
-                  I understand that a human will review my interview and that my data will be handled according to the{' '}
-                  <a href="#" className="text-purple-600 hover:underline">privacy policy</a>.
+                <span className="text-sm text-gray-700">
+                  I understand and consent to being recorded for this interview
                 </span>
               </label>
+            </div>
+
+            {/* Contact Info */}
+            <div className="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200">
+              <p className="text-sm text-gray-600">
+                Questions? Contact the recruitment team at{' '}
+                <a href={`mailto:${recruiterEmail}`} className="text-purple-600 hover:underline">
+                  {recruiterEmail}
+                </a>
+              </p>
             </div>
 
             {/* CTAs */}
@@ -387,9 +533,9 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
               <button
                 onClick={() => setStep('preparation')}
                 disabled={!consentChecked}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                Continue →
+                I Agree, Continue →
               </button>
             </div>
           </div>
@@ -398,56 +544,43 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
     )
   }
 
-  // Step 3: Preparation Page
+  // Step 3: Preparation
   if (step === 'preparation') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">🎯</div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Get Ready for Your Interview
-              </h1>
-              <p className="text-gray-600">
-                This is just like a normal first-round screening call
-              </p>
-            </div>
-
-            {/* Comfort Message */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-6">
-              <p className="text-gray-700 leading-relaxed">
-                We'll ask you a few questions about your experience and what you bring to the role. 
-                This is your chance to share what's not on your CV and show us your personality and passion. 
-                There are no trick questions – just be yourself! 🌟
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Tips</h1>
+            <p className="text-gray-600 mb-6">Set yourself up for success</p>
 
             {/* Tips */}
-            <div className="mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Quick Tips:</h3>
-              <div className="space-y-3">
-                <div className="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <span className="text-2xl">🔇</span>
-                  <div>
-                    <p className="font-medium text-gray-900">Find a quiet place</p>
-                    <p className="text-sm text-gray-600">Minimize background noise for the best experience</p>
-                  </div>
+            <div className="space-y-4 mb-8">
+              <div className="flex gap-4 p-4 bg-green-50 rounded-lg border border-green-100">
+                <span className="text-2xl">🎤</span>
+                <div>
+                  <p className="font-medium text-gray-900">Check your microphone</p>
+                  <p className="text-sm text-gray-600">Make sure your browser has permission to access your mic</p>
                 </div>
-                <div className="flex gap-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
-                  <span className="text-2xl">💭</span>
-                  <div>
-                    <p className="font-medium text-gray-900">Take your time</p>
-                    <p className="text-sm text-gray-600">It's okay to pause and think before answering</p>
-                  </div>
+              </div>
+              <div className="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <span className="text-2xl">🔇</span>
+                <div>
+                  <p className="font-medium text-gray-900">Find a quiet place</p>
+                  <p className="text-sm text-gray-600">Minimize background noise for the best experience</p>
                 </div>
-                <div className="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <span className="text-2xl">🎧</span>
-                  <div>
-                    <p className="font-medium text-gray-900">Use headphones if possible</p>
-                    <p className="text-sm text-gray-600">This helps ensure clear audio quality</p>
-                  </div>
+              </div>
+              <div className="flex gap-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
+                <span className="text-2xl">💭</span>
+                <div>
+                  <p className="font-medium text-gray-900">Take your time</p>
+                  <p className="text-sm text-gray-600">It's okay to pause and think before answering</p>
+                </div>
+              </div>
+              <div className="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <span className="text-2xl">🎧</span>
+                <div>
+                  <p className="font-medium text-gray-900">Use headphones if possible</p>
+                  <p className="text-sm text-gray-600">This helps ensure clear audio quality</p>
                 </div>
               </div>
             </div>

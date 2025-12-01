@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: Request) {
   try {
-    const { title, description, companyName, competencies, questions } = await request.json()
+    const { title, description, companyName, competencies, questions, knockoutQuestions } = await request.json()
 
     // Get auth header
     const authHeader = request.headers.get('authorization')
@@ -93,6 +93,22 @@ export async function POST(request: Request) {
       .insert(questionInserts)
 
     if (questionsError) throw questionsError
+
+    // Create knockout questions if provided
+    if (knockoutQuestions && knockoutQuestions.length > 0) {
+      const knockoutInserts = knockoutQuestions.map((kq: any, index: number) => ({
+        role_id: role.id,
+        question_text: kq.question_text,
+        required_answer: kq.required_answer,
+        order_index: index
+      }))
+
+      const { error: knockoutError } = await supabase
+        .from('knockout_questions')
+        .insert(knockoutInserts)
+
+      if (knockoutError) throw knockoutError
+    }
 
     return NextResponse.json({ roleId: role.id })
   } catch (error: any) {
