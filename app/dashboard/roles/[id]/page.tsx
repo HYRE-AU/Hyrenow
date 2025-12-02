@@ -24,6 +24,7 @@ type Competency = {
   id: string
   name: string
   description: string
+  weight: number
   bars_rubric: {
     level_1: { label: string; description: string }
     level_2: { label: string; description: string }
@@ -473,9 +474,22 @@ export default function RoleDetailPage() {
                 <tbody>
                   {competencies.map((comp, index) => (
                     <tr key={index} className="hover:bg-gray-50 transition-colors">
-                      <td className="border border-gray-300 px-3 py-3 font-semibold text-sm text-gray-900 align-top">
-                        {comp.name}
-                      </td>
+<td className="border border-gray-300 px-3 py-3 font-semibold text-sm text-gray-900 align-top min-w-[140px]">
+  <div className="flex flex-col gap-2">
+    <span className="leading-tight">{comp.name}</span>
+    <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
+      comp.weight === 3 ? 'bg-red-100 text-red-700 border border-red-200' :
+      comp.weight === 2 ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+      'bg-green-100 text-green-700 border border-green-200'
+    }`}>
+      <span className={`w-2 h-2 rounded-full ${
+        comp.weight === 3 ? 'bg-red-500' :
+        comp.weight === 2 ? 'bg-amber-500' : 'bg-green-500'
+      }`}></span>
+      {comp.weight === 3 ? 'Critical' : comp.weight === 2 ? 'Important' : 'Nice-to-Have'}
+    </span>
+  </div>
+</td>
                       <td className="border border-gray-300 px-3 py-3 text-xs text-gray-700 align-top">
                         {comp.description}
                       </td>

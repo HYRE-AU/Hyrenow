@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 type Competency = {
   name: string
   description: string
+  weight: number
   bars_rubric: {
     level_1: { label: string; description: string }
     level_2: { label: string; description: string }
@@ -199,7 +200,7 @@ export default function NewRolePage() {
   function updateCompetency(index: number, field: keyof Competency | string, value: any) {
     const updated = [...competencies]
 
-    if (field === 'name' || field === 'description') {
+    if (field === 'name' || field === 'description' || field === 'weight') {
       updated[index] = { ...updated[index], [field]: value }
     } else if (field.startsWith('bars_rubric.')) {
       const level = field.split('.')[1] as 'level_1' | 'level_2' | 'level_3' | 'level_4'
@@ -222,6 +223,7 @@ export default function NewRolePage() {
     const newCompetency: Competency = {
       name: '',
       description: '',
+      weight: 2,
       bars_rubric: {
         level_1: { label: 'Below Expectations', description: '' },
         level_2: { label: 'Meets Expectations', description: '' },
@@ -369,6 +371,44 @@ export default function NewRolePage() {
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Weight
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => updateCompetency(index, 'weight', 3)}
+                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                        comp.weight === 3
+                          ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-red-400'
+                      }`}
+                    >
+                      Critical 3×
+                    </button>
+                    <button
+                      onClick={() => updateCompetency(index, 'weight', 2)}
+                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                        comp.weight === 2
+                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
+                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-amber-400'
+                      }`}
+                    >
+                      Important 2×
+                    </button>
+                    <button
+                      onClick={() => updateCompetency(index, 'weight', 1)}
+                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                        comp.weight === 1
+                          ? 'bg-gray-500 text-white shadow-lg shadow-gray-500/30'
+                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-400'
+                      }`}
+                    >
+                      Nice-to-Have 1×
+                    </button>
+                  </div>
                 </div>
 
                 <details className="mt-4">

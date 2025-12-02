@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         title,
         jd_text: description,
         company_name: companyName || null,
-        role_briefing: roleBriefing?.trim() || null,
+        role_briefing: roleBriefing || null,
         status: 'active',
       })
       .select()
@@ -57,12 +57,13 @@ export async function POST(request: Request) {
     // Create competencies if provided
     let competencyMap = new Map<string, string>()
     if (competencies && competencies.length > 0) {
-      const competencyInserts = competencies.map((c: any) => ({
-        role_id: role.id,
-        name: c.name,
-        description: c.description,
-        bars_rubric: c.bars_rubric
-      }))
+const competencyInserts = competencies.map((c: any) => ({
+  role_id: role.id,
+  name: c.name,
+  description: c.description, 
+  weight: c.weight || 2,
+  bars_rubric: c.bars_rubric
+}))
 
       const { data: createdCompetencies, error: competenciesError } = await supabase
         .from('competencies')

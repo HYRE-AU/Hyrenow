@@ -7,7 +7,7 @@ import { GlassCard, GlassButton, StatusBadge, CircularProgress } from '@/compone
 import {
   ArrowLeft, User, Mail, Calendar, FileText, Clock,
   CheckCircle2, AlertTriangle, TrendingUp, MessageSquare,
-  Copy, ExternalLink, ChevronDown, ChevronRight
+  Copy, ExternalLink, ChevronDown, ChevronRight, Scale
 } from 'lucide-react'
 
 type Candidate = {
@@ -257,10 +257,11 @@ const { data: interviewsData, error: interviewsError } = await supabase
     }
   }
 
-  const getRecommendationColor = (rec: string) => {
+const getRecommendationColor = (rec: string) => {
     switch (rec) {
       case 'strong yes': return 'bg-green-100 text-green-800 border-green-300'
       case 'yes': return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'borderline': return 'bg-amber-100 text-amber-800 border-amber-300'
       case 'no': return 'bg-orange-100 text-orange-800 border-orange-300'
       case 'strong no': return 'bg-red-100 text-red-800 border-red-300'
       default: return 'bg-gray-100 text-gray-800 border-gray-300'
@@ -423,48 +424,64 @@ const { data: interviewsData, error: interviewsError } = await supabase
                               </div>
                             )}
 
-                            {/* Recommendation Badge */}
-                            <div className="flex flex-col justify-center">
-                              <p className="text-sm text-gray-600 mb-3 font-medium">Recommendation</p>
-                              <div className={`glass-card p-4 rounded-xl text-center border-2 ${getRecommendationColor(interview.structured_evaluation.recommendation)}`}>
-                                <div className="text-lg font-bold">
-                                  {interview.structured_evaluation.recommendation === 'strong yes' && <CheckCircle2 className="w-6 h-6 inline mb-1 mr-1" />}
-                                  {interview.structured_evaluation.recommendation === 'strong no' && <AlertTriangle className="w-6 h-6 inline mb-1 mr-1" />}
-                                  {interview.structured_evaluation.recommendation?.toUpperCase()}
-                                </div>
-                              </div>
-                            </div>
+{/* Recommendation Badge */}
+<div className="flex flex-col justify-center">
+  <p className="text-sm text-gray-600 mb-3 font-medium">Recommendation</p>
+  <div className={`glass-card p-4 rounded-xl text-center border-2 ${getRecommendationColor(interview.structured_evaluation.recommendation)}`}>
+    <div className="text-lg font-bold flex items-center justify-center gap-2">
+      {(interview.structured_evaluation.recommendation === 'strong yes' || interview.structured_evaluation.recommendation === 'yes') && <CheckCircle2 className="w-6 h-6" />}
+      {interview.structured_evaluation.recommendation === 'borderline' && <Scale className="w-6 h-6" />}
+      {(interview.structured_evaluation.recommendation === 'no' || interview.structured_evaluation.recommendation === 'strong no') && <AlertTriangle className="w-6 h-6" />}
+      {interview.structured_evaluation.recommendation?.toUpperCase()}
+    </div>
+    {interview.structured_evaluation.confidence && (
+      <p className="text-xs mt-2 opacity-75">
+        {interview.structured_evaluation.confidence} confidence
+      </p>
+    )}
+  </div>
+</div>
                           </div>
                         )}
 
-                        {/* Top Reasons Preview */}
-                        {interview.structured_evaluation?.reasons_to_proceed?.length > 0 && (
-                          <GlassCard className="p-5 mb-6">
-                            <p className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                              Key Strengths
-                            </p>
-                            <ul className="space-y-2">
-                              {interview.structured_evaluation.reasons_to_proceed.slice(0, 3).map((reason: string, idx: number) => (
-                                <li key={idx} className="text-sm text-gray-700 flex gap-2 items-start">
-                                  <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                  </div>
-                                  <span>{reason}</span>
-                                </li>
-                              ))}
-                            </ul>
-                            {interview.structured_evaluation.reasons_to_proceed.length > 3 && (
-                              <button
-                                onClick={() => setExpandedInterview(expandedInterview === interview.id ? null : interview.id)}
-                                className="text-xs text-purple-600 hover:text-purple-700 mt-3 font-medium flex items-center gap-1"
-                              >
-                                <ChevronRight className="w-3 h-3" />
-                                +{interview.structured_evaluation.reasons_to_proceed.length - 3} more reasons
-                              </button>
-                            )}
-                          </GlassCard>
-                        )}
+{/* Borderline Preview */}
+{interview.structured_evaluation?.recommendation === 'borderline' && (
+  <GlassCard className="p-5 mb-6 bg-amber-50/50 border-2 border-amber-200">
+    <p className="text-sm font-semibold text-amber-900 mb-3 flex items-center gap-2">
+      <Scale className="w-5 h-5 text-amber-600" />
+      Why Borderline - Human Review Needed
+    </p>
+    {interview.structured_evaluation.borderline_triggers?.map((trigger: string, idx: number) => (
+      <p key={idx} className="text-sm text-amber-800 mb-2">• {trigger}</p>
+    ))}
+    {interview.structured_evaluation.review_focus && (
+      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <p className="text-sm text-blue-800">
+          <strong>📋 Review Focus:</strong> {interview.structured_evaluation.review_focus}
+        </p>
+      </div>
+    )}
+  </GlassCard>
+)}
+
+{/* No/Strong No - Key Concerns Preview */}
+{(interview.structured_evaluation?.recommendation === 'no' || interview.structured_evaluation?.recommendation === 'strong no') && 
+ interview.structured_evaluation?.reasons_not_to_proceed?.length > 0 && (
+  <GlassCard className="p-5 mb-6 bg-red-50/50 border-2 border-red-200">
+    <p className="text-sm font-semibold text-red-900 mb-3 flex items-center gap-2">
+      <AlertTriangle className="w-5 h-5 text-red-600" />
+      Key Concerns
+    </p>
+    <ul className="space-y-2">
+      {interview.structured_evaluation.reasons_not_to_proceed.slice(0, 3).map((reason: string, idx: number) => (
+        <li key={idx} className="text-sm text-red-800 flex gap-2 items-start">
+          <span>•</span>
+          <span>{reason}</span>
+        </li>
+      ))}
+    </ul>
+  </GlassCard>
+)}
 
                         {/* Action Buttons */}
                         {(interview.status === 'completed') && interview.structured_evaluation && (
@@ -563,6 +580,89 @@ const { data: interviewsData, error: interviewsError } = await supabase
                               </ul>
                             </GlassCard>
                           )}
+
+                          {/* Borderline - Considerations For/Against (Expanded) */}
+{interview.structured_evaluation.recommendation === 'borderline' && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {interview.structured_evaluation.considerations_for?.length > 0 && (
+      <GlassCard className="p-4 bg-green-50/50 border-2 border-green-200">
+        <h4 className="text-md font-semibold text-green-900 mb-3 flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-green-600" />
+          Considerations For
+        </h4>
+        <ul className="space-y-2">
+          {interview.structured_evaluation.considerations_for.map((item: string, idx: number) => (
+            <li key={idx} className="text-sm text-green-800 flex gap-2">
+              <span className="text-green-600">+</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </GlassCard>
+    )}
+    {interview.structured_evaluation.considerations_against?.length > 0 && (
+      <GlassCard className="p-4 bg-red-50/50 border-2 border-red-200">
+        <h4 className="text-md font-semibold text-red-900 mb-3 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+          Considerations Against
+        </h4>
+        <ul className="space-y-2">
+          {interview.structured_evaluation.considerations_against.map((item: string, idx: number) => (
+            <li key={idx} className="text-sm text-red-800 flex gap-2">
+              <span className="text-red-600">−</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </GlassCard>
+    )}
+  </div>
+)}
+
+{/* Competency Breakdown with Weights */}
+{interview.structured_evaluation.competency_scores?.length > 0 && (
+  <div>
+    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      📊 Competency Breakdown
+    </h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {interview.structured_evaluation.competency_scores.map((cs: any, idx: number) => (
+        <GlassCard 
+          key={idx} 
+          className={`p-4 border-l-4 ${
+            cs.weight === 3 ? 'border-red-500' : 
+            cs.weight === 2 ? 'border-amber-500' : 'border-gray-400'
+          }`}
+        >
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <p className="font-semibold text-gray-900">{cs.competency_name}</p>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                cs.weight === 3 ? 'bg-red-100 text-red-700' :
+                cs.weight === 2 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
+              }`}>
+                {cs.weight === 3 ? '🔴 Critical' : cs.weight === 2 ? '🟠 Important' : '🟢 Nice-to-Have'} ({cs.weight}×)
+              </span>
+            </div>
+            <span className="text-lg font-bold text-gray-900">{cs.raw_score}/4</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+            <div 
+              className={`h-2 rounded-full ${
+                cs.raw_score >= 3 ? 'bg-green-500' : 
+                cs.raw_score >= 2 ? 'bg-amber-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${(cs.raw_score / 4) * 100}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Contribution: {cs.weighted_contribution}/{cs.max_contribution} ({Math.round((cs.weighted_contribution / cs.max_contribution) * 100)}%)
+          </p>
+        </GlassCard>
+      ))}
+    </div>
+  </div>
+)}
 
                           {/* Question Performance */}
                           {interview.structured_evaluation.question_evaluations?.length > 0 && (

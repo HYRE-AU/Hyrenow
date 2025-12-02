@@ -31,21 +31,22 @@ export async function POST(request: Request) {
 
     if (interviewError || !interview) throw new Error('Interview not found')
 
-    // Get all questions with competencies
-    const { data: questions, error: questionsError } = await supabase
-      .from('questions')
-      .select(`
-        id,
-        text,
-        type,
-        order_index,
-        competencies (
-          id,
-          name,
-          description,
-          bars_rubric
-        )
-      `)
+// Get all questions with competencies
+const { data: questions, error: questionsError } = await supabase
+  .from('questions')
+  .select(`
+    id,
+    text,
+    type,
+    order_index,
+    competencies (
+      id,
+      name,
+      description,
+      weight,
+      bars_rubric
+    )
+  `)
       .eq('role_id', (interview.roles as any).id)
       .order('order_index')
 
@@ -106,19 +107,82 @@ export async function POST(request: Request) {
       evaluations.push(evaluation)
     }
 
-    // Check if we have any evaluations
+// Check if we have any evaluations
     if (evaluations.length === 0) {
       throw new Error('No interview questions were evaluated. Please check that interview questions exist for this role.')
     }
 
-    // Calculate overall recommendation
-    const avgScore = evaluations.reduce((sum, e) => sum + e.score, 0) / evaluations.length
-    const recommendation =
-      avgScore >= 3.5 ? 'strong yes' :
-      avgScore >= 2.5 ? 'yes' :
-      avgScore >= 1.5 ? 'no' : 'strong no'
-
-    const overallScore = Math.round((avgScore / 4) * 100)
+    // Get interview questions with their competency weights
+    const interviewQAs = qaMapping.filter((q: any) => q.type === 'interview')
+    
+    // Calculate WEIGHTED score
+    let totalWeightedScore = 0
+    let totalMaxScore = 0
+    const competencyScores: any[] = []
+    
+    interviewQAs.forEach((qa: any, index: number) => {
+      const evaluation = evaluations[index]
+      const weight = qa.competency?.weight || 2  // Default to Important if no weight
+      const score = evaluation.score || 1
+      
+      totalWeightedScore += score * weight
+      totalMaxScore += 4 * weight
+      
+      competencyScores.push({
+        competency_name: qa.competency?.name || 'Unknown',
+        raw_score: score,
+        weight: weight,
+        weight_label: weight === 3 ? 'critical' : weight === 2 ? 'important' : 'nice_to_have',
+        weighted_contribution: score * weight,
+        max_contribution: 4 * weight,
+        strengths: evaluation.strengths || [],
+        concerns: evaluation.concerns || []
+      })
+    })
+    
+    const overallScore = Math.round((totalWeightedScore / totalMaxScore) * 100)
+    const avgScore = totalWeightedScore / (totalMaxScore / 4)  // For display purposes
+    
+    // Check for BORDERLINE triggers
+    const borderlineTriggers: string[] = []
+    
+    // 1. High variance check
+    const rawScores = competencyScores.map(c => c.raw_score)
+    const mean = rawScores.reduce((a, b) => a + b, 0) / rawScores.length
+    const variance = rawScores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / rawScores.length
+    if (variance > 1.5) {
+      borderlineTriggers.push('High variance across competencies - performance was inconsistent')
+    }
+    
+    // 2. Critical competency failure check
+    const criticalFailures = competencyScores.filter(c => c.weight === 3 && c.raw_score < 2)
+    if (criticalFailures.length > 0) {
+      borderlineTriggers.push(`Critical competency "${criticalFailures[0].competency_name}" scored below threshold`)
+    }
+    
+    // Determine recommendation with FIVE tiers
+    let recommendation: string
+    let confidence: string
+    
+    if (borderlineTriggers.length > 0 && overallScore >= 40 && overallScore < 75) {
+      recommendation = 'borderline'
+      confidence = 'low'
+    } else if (overallScore >= 80) {
+      recommendation = 'strong yes'
+      confidence = 'high'
+    } else if (overallScore >= 65) {
+      recommendation = 'yes'
+      confidence = variance > 1.0 ? 'moderate' : 'high'
+    } else if (overallScore >= 50) {
+      recommendation = 'borderline'
+      confidence = 'moderate'
+    } else if (overallScore >= 35) {
+      recommendation = 'no'
+      confidence = 'high'
+    } else {
+      recommendation = 'strong no'
+      confidence = 'high'
+    }
 
     // Build reasons and flags
     const allStrengths: string[] = []
@@ -133,15 +197,23 @@ export async function POST(request: Request) {
       }
     })
 
-    // Organize based on recommendation
+    // Organize based on recommendation type
     let reasonsToProceed: string[] | null = null
     let flagsRisks: string[] | null = null
     let reasonsNotToProceed: string[] | null = null
     let strengths: string[] | null = null
+    let considerationsFor: string[] | null = null
+    let considerationsAgainst: string[] | null = null
+    let reviewFocus: string | null = null
 
     if (recommendation === 'strong yes' || recommendation === 'yes') {
       reasonsToProceed = allStrengths.slice(0, 5)
       flagsRisks = allConcerns.slice(0, 5)
+    } else if (recommendation === 'borderline') {
+      considerationsFor = allStrengths.slice(0, 4)
+      considerationsAgainst = allConcerns.slice(0, 4)
+      const lowestScoring = [...competencyScores].sort((a, b) => a.raw_score - b.raw_score)[0]
+      reviewFocus = `Listen to responses about ${lowestScoring?.competency_name || 'key competencies'} - this is where signals were mixed.`
     } else {
       reasonsNotToProceed = allConcerns.slice(0, 5)
       strengths = allStrengths.slice(0, 5)
@@ -154,26 +226,35 @@ export async function POST(request: Request) {
       .filter((name: string, index: number, self: string[]) => self.indexOf(name) === index) // unique
       .join(', ')
 
-    // Generate recommendation rationale using LLM - rooted in competencies and responsibilities
-    const rationalePrompt = `Based on this interview evaluation, write a 2-3 sentence explanation of WHY we recommend "${recommendation}" for this candidate.
+// Generate recommendation rationale using LLM
+    let rationalePrompt: string
+    
+    if (recommendation === 'borderline') {
+      rationalePrompt = `Based on this interview evaluation, write a 2-3 sentence explanation for why this candidate is BORDERLINE and requires human review.
 
 Role: ${(interview.roles as any).title}
+Weighted Score: ${overallScore}%
+Borderline Triggers: ${borderlineTriggers.join('; ') || 'Score fell in borderline range'}
 
-Competencies Evaluated: ${evaluatedCompetencies}
-
-Job Responsibilities/What They'll Do:
-${(interview.roles as any).jd_text}
-
-Average Score: ${avgScore.toFixed(2)}/4.0
 Key Strengths: ${allStrengths.slice(0, 3).join('; ') || 'None identified'}
 Key Concerns: ${allConcerns.slice(0, 3).join('; ') || 'None identified'}
 
-Write a concise, specific rationale that:
-1. Connects their performance in the evaluated competencies to the actual job responsibilities
-2. Explains whether they can handle what they'll be doing day-to-day in this role
-3. Focuses on the most important factors for success in this specific position
+Write a balanced rationale that:
+1. Acknowledges what the candidate did well
+2. Explains the specific concerns or inconsistencies
+3. Suggests what a human reviewer should focus on`
+    } else {
+      rationalePrompt = `Based on this interview evaluation, write a 2-3 sentence explanation of WHY we recommend "${recommendation}" for this candidate.
 
-Be specific about how their strengths/concerns relate to the responsibilities they'll have.`
+Role: ${(interview.roles as any).title}
+Competencies Evaluated: ${evaluatedCompetencies}
+Weighted Score: ${overallScore}%
+
+Key Strengths: ${allStrengths.slice(0, 3).join('; ') || 'None identified'}
+Key Concerns: ${allConcerns.slice(0, 3).join('; ') || 'None identified'}
+
+Write a concise, specific rationale that connects their competency performance to the role requirements.`
+    }
 
     const rationaleCompletion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -233,13 +314,19 @@ Be specific about how their strengths/concerns relate to the responsibilities th
         }
       })
 
-    const structuredEvaluation = {
+const structuredEvaluation = {
       recommendation,
+      confidence,
       recommendation_rationale: recommendationRationale,
       reasons_to_proceed: reasonsToProceed,
       flags_risks: flagsRisks,
       reasons_not_to_proceed: reasonsNotToProceed,
       strengths: strengths,
+      considerations_for: considerationsFor,
+      considerations_against: considerationsAgainst,
+      review_focus: reviewFocus,
+      borderline_triggers: borderlineTriggers.length > 0 ? borderlineTriggers : null,
+      competency_scores: competencyScores,
       question_evaluations: questionEvaluations
     }
 
