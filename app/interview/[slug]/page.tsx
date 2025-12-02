@@ -208,11 +208,14 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
         },
         firstMessage: interview.roles.role_briefing
           ? `Hi ${interview.candidates.name.split(' ')[0]}! Thanks so much for joining me today. I'm really excited to chat with you about the ${interview.roles.title} role at ${interview.roles.company_name || interview.roles.organisations.name}. Before we jump into the interview questions, let me give you a bit of background on the company and what makes this opportunity special.`
-          : `Hi ${interview.candidates.name.split(' ')[0]}! Thanks so much for joining me today for the ${interview.roles.title} interview. I've got ${interview.questions.length} questions for us to go through. Ready to get started?`,        metadata: {
+          : `Hi ${interview.candidates.name.split(' ')[0]}! Thanks so much for joining me today for the ${interview.roles.title} interview. I've got ${interview.questions.length} questions for us to go through. Ready to get started?`,metadata: {
           interviewSlug: slug
+        },
+        artifactPlan: {
+          recordingEnabled: true
         }
       })
-
+      
       setCallState('active')
       setStep('interview')
     } catch (err: any) {

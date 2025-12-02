@@ -466,14 +466,14 @@ const getRecommendationColor = (rec: string) => {
 
 {/* No/Strong No - Key Concerns Preview */}
 {(interview.structured_evaluation?.recommendation === 'no' || interview.structured_evaluation?.recommendation === 'strong no') && 
- interview.structured_evaluation?.reasons_not_to_proceed?.length > 0 && (
+ interview.structured_evaluation?.key_concerns?.length > 0 && (
   <GlassCard className="p-5 mb-6 bg-red-50/50 border-2 border-red-200">
     <p className="text-sm font-semibold text-red-900 mb-3 flex items-center gap-2">
       <AlertTriangle className="w-5 h-5 text-red-600" />
       Key Concerns
     </p>
     <ul className="space-y-2">
-      {interview.structured_evaluation.reasons_not_to_proceed.slice(0, 3).map((reason: string, idx: number) => (
+      {interview.structured_evaluation.key_concerns.slice(0, 3).map((reason: string, idx: number) => (
         <li key={idx} className="text-sm text-red-800 flex gap-2 items-start">
           <span>•</span>
           <span>{reason}</span>
@@ -541,20 +541,66 @@ const getRecommendationColor = (rec: string) => {
                       {/* Expanded Full Evaluation */}
                       {expandedInterview === interview.id && interview.structured_evaluation && (
                         <div className="border-t border-gray-200/50 p-6 bg-white/30 space-y-6">
-                          {/* Full Reasons to Proceed */}
-                          {interview.structured_evaluation.reasons_to_proceed?.length > 0 && (
+{/* Why This Candidate - for Yes/Strong Yes */}
+                          {(interview.structured_evaluation.recommendation === 'yes' || 
+                            interview.structured_evaluation.recommendation === 'strong yes') &&
+                            interview.structured_evaluation.why_this_candidate?.length > 0 && (
                             <div>
                               <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                 <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                                All Reasons to Proceed
+                                Why This Candidate
                               </h4>
                               <ul className="space-y-3">
-                                {interview.structured_evaluation.reasons_to_proceed.map((reason: string, idx: number) => (
+                                {interview.structured_evaluation.why_this_candidate.map((reason: string, idx: number) => (
                                   <li key={idx} className="flex gap-3 text-gray-700">
                                     <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                                     </div>
                                     <span>{reason}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Key Concerns - for No/Strong No */}
+                          {(interview.structured_evaluation.recommendation === 'no' || 
+                            interview.structured_evaluation.recommendation === 'strong no') &&
+                            interview.structured_evaluation.key_concerns?.length > 0 && (
+                            <GlassCard className="bg-red-50/50 border-2 border-red-200 p-4">
+                              <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <AlertTriangle className="w-6 h-6 text-red-600" />
+                                Key Concerns
+                              </h4>
+                              <ul className="space-y-3">
+                                {interview.structured_evaluation.key_concerns.map((concern: string, idx: number) => (
+                                  <li key={idx} className="flex gap-3 text-gray-700">
+                                    <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                                    </div>
+                                    <span>{concern}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </GlassCard>
+                          )}
+
+                          {/* Notable Strengths - for No/Strong No */}
+                          {(interview.structured_evaluation.recommendation === 'no' || 
+                            interview.structured_evaluation.recommendation === 'strong no') &&
+                            interview.structured_evaluation.notable_strengths?.length > 0 && (
+                            <div>
+                              <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                                Notable Strengths
+                              </h4>
+                              <ul className="space-y-3">
+                                {interview.structured_evaluation.notable_strengths.map((strength: string, idx: number) => (
+                                  <li key={idx} className="flex gap-3 text-gray-700">
+                                    <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                    </div>
+                                    <span>{strength}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -625,7 +671,7 @@ const getRecommendationColor = (rec: string) => {
     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
       📊 Competency Breakdown
     </h4>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
       {interview.structured_evaluation.competency_scores.map((cs: any, idx: number) => (
         <GlassCard 
           key={idx} 
@@ -658,6 +704,26 @@ const getRecommendationColor = (rec: string) => {
           <p className="text-xs text-gray-500 mt-1">
             Contribution: {cs.weighted_contribution}/{cs.max_contribution} ({Math.round((cs.weighted_contribution / cs.max_contribution) * 100)}%)
           </p>
+          {/* Justification */}
+          {cs.justification && (
+            <p className="text-sm text-gray-700 mt-3">{cs.justification}</p>
+          )}
+          {/* Evidence Quotes */}
+          {cs.evidence_quotes?.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
+                <MessageSquare className="w-3 h-3" />
+                Evidence from Interview
+              </p>
+              <div className="space-y-2">
+                {cs.evidence_quotes.slice(0, 2).map((quote: string, qIdx: number) => (
+                  <blockquote key={qIdx} className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded border-l-2 border-purple-300">
+                    "{quote}"
+                  </blockquote>
+                ))}
+              </div>
+            </div>
+          )}
         </GlassCard>
       ))}
     </div>
