@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { logError } from '@/lib/errorLogger'
+import { requireAdmin } from '@/lib/auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,12 @@ const supabase = createClient(
 )
 
 export async function GET() {
+  // Require admin authentication
+  const authResult = await requireAdmin()
+  if (!authResult.authorized) {
+    return authResult.response
+  }
+
   try {
     // Query interviews with failed or pending_retry evaluation status
     const { data: failedByStatus, error: statusError } = await supabase

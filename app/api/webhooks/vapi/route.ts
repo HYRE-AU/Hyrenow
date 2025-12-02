@@ -1,20 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { logError } from '@/lib/errorLogger';
+import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 );
 
+/**
+ * Validates Vapi webhook signature
+ * Returns true if valid or if verification is skipped in development
+ */
+function validateWebhookSignature(
+  payload: string,
+  signature: string | null,
+  secret: string | undefined
+): boolean {
+  // If no secret configured, skip verification but log warning
+  if (!secret) {
+    console.warn('⚠️ VAPI_WEBHOOK_SECRET not configured - skipping signature verification');
+    return true;
+  }
+
+  if (!signature) {
+    console.error('❌ No signature provided in webhook request');
+    return false;
+  }
+
+  try {
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(payload)
+      .digest('hex');
+
+    // Constant-time comparison to prevent timing attacks
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+
+    if (!isValid) {
+      console.error('❌ Webhook signature mismatch');
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error('❌ Webhook signature validation error:', error);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   let interviewSlug: string | undefined;
   let vapiCallId: string | undefined;
 
   try {
-    const body = await request.json();
+    // Get raw body for signature verification
+    const rawBody = await request.text();
+    const signature = request.headers.get('x-vapi-signature');
 
-    console.log('📞 Vapi webhook received');
+    // Validate webhook signature
+    const isValidSignature = validateWebhookSignature(
+      rawBody,
+      signature,
+      process.env.VAPI_WEBHOOK_SECRET
+    );
+
+    if (!isValidSignature) {
+      await logError({
+        endpoint: '/api/webhooks/vapi',
+        errorType: 'invalid_signature',
+        errorMessage: 'Webhook signature verification failed',
+        requestBody: { hasSignature: !!signature }
+      });
+      return NextResponse.json(
+        { error: 'Invalid webhook signature' },
+        { status: 401 }
+      );
+    }
+
+    // Parse the body after signature verification
+    const body = JSON.parse(rawBody);
+
+    console.log('📞 Vapi webhook received (signature verified)');
 
     const { message } = body;
 
