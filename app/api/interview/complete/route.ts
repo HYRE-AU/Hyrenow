@@ -1,14 +1,37 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logError } from '@/lib/errorLogger'
 
 export async function POST(request: Request) {
+  let slug: string | undefined
+  let vapiCallId: string | undefined
+  let interviewId: string | undefined
+
   try {
-    const { slug, vapiCallId } = await request.json()
+    const body = await request.json()
+    slug = body.slug
+    vapiCallId = body.vapiCallId
 
     console.log('📥 Interview completion request:', { slug, vapiCallId })
 
+    if (!slug) {
+      await logError({
+        endpoint: '/api/interview/complete',
+        errorType: 'validation_error',
+        errorMessage: 'No interview slug provided',
+        requestBody: { vapiCallId }
+      })
+      return NextResponse.json({ error: 'Interview slug is required' }, { status: 400 })
+    }
+
     if (!vapiCallId) {
       console.error('❌ CRITICAL: No vapiCallId received! Cannot fetch transcript.')
+      await logError({
+        endpoint: '/api/interview/complete',
+        errorType: 'missing_vapi_call_id',
+        errorMessage: 'No vapiCallId received - transcript fetch will fail',
+        interviewSlug: slug
+      })
     } else {
       console.log('✅ Valid vapiCallId received:', vapiCallId)
     }
@@ -62,12 +85,27 @@ export async function POST(request: Request) {
             console.warn('⚠️ No messages or transcript found in Vapi response')
           }
         } else {
-          console.error('❌ Failed to fetch from Vapi. Status:', vapiResponse.status, 'StatusText:', vapiResponse.statusText)
           const errorBody = await vapiResponse.text()
+          console.error('❌ Failed to fetch from Vapi. Status:', vapiResponse.status, 'StatusText:', vapiResponse.statusText)
           console.error('Error response:', errorBody)
+          await logError({
+            endpoint: '/api/interview/complete',
+            errorType: 'vapi_fetch_failed',
+            errorMessage: `Vapi API returned ${vapiResponse.status}: ${errorBody.slice(0, 500)}`,
+            interviewSlug: slug,
+            requestBody: { vapiCallId }
+          })
         }
-      } catch (vapiError) {
+      } catch (vapiError: any) {
         console.error('❌ Error fetching transcript from Vapi:', vapiError)
+        await logError({
+          endpoint: '/api/interview/complete',
+          errorType: 'vapi_fetch_exception',
+          errorMessage: vapiError.message || 'Unknown Vapi fetch error',
+          errorStack: vapiError.stack,
+          interviewSlug: slug,
+          requestBody: { vapiCallId }
+        })
       }
     }
 
@@ -83,7 +121,18 @@ export async function POST(request: Request) {
       .eq('slug', slug)
       .single()
 
-    if (interviewError) throw interviewError
+    if (interviewError || !interview) {
+      await logError({
+        endpoint: '/api/interview/complete',
+        errorType: 'interview_not_found',
+        errorMessage: interviewError?.message || `Interview not found for slug: ${slug}`,
+        interviewSlug: slug,
+        requestBody: { vapiCallId }
+      })
+      return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
+    }
+
+    interviewId = interview.id
 
     // Calculate interview duration
     let durationSeconds = null
@@ -95,7 +144,7 @@ export async function POST(request: Request) {
     }
 
     // Update interview with transcript, duration, and recording URL
-    await supabase
+    const { error: updateError } = await supabase
       .from('interviews')
       .update({
         transcript: { text: transcript, messages: messages },
@@ -107,14 +156,36 @@ export async function POST(request: Request) {
       })
       .eq('id', interview.id)
 
+    if (updateError) {
+      await logError({
+        endpoint: '/api/interview/complete',
+        errorType: 'interview_update_failed',
+        errorMessage: updateError.message,
+        interviewId: interview.id,
+        interviewSlug: slug
+      })
+      return NextResponse.json({ error: 'Failed to save interview data' }, { status: 500 })
+    }
+
     console.log('✅ Interview data saved - waiting for Vapi webhook to trigger evaluation')
     console.log('Interview completed successfully for slug:', slug)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('Interview completion error:', error)
+
+    await logError({
+      endpoint: '/api/interview/complete',
+      errorType: 'complete_exception',
+      errorMessage: error.message || 'Unknown completion error',
+      errorStack: error.stack,
+      interviewId,
+      interviewSlug: slug,
+      requestBody: { vapiCallId }
+    })
+
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Interview completion failed' },
       { status: 500 }
     )
   }
