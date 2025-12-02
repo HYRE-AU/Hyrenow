@@ -21,11 +21,12 @@ export async function GET(
         slug,
         screened_out_at,
         screened_out_reason,
-        roles (
+       roles (
           id,
           title,
           jd_text,
           company_name,
+          role_briefing,
           organisations (
             name
           )

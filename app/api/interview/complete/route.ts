@@ -16,7 +16,8 @@ export async function POST(request: Request) {
     // Fetch transcript from Vapi API
     let transcript = 'Transcript not available'
     let messages: any[] = []
-    
+    let recordingUrl: string | null = null
+
     if (vapiCallId) {
       try {
         console.log('🔍 Fetching transcript from Vapi for call:', vapiCallId)
@@ -29,6 +30,15 @@ export async function POST(request: Request) {
         if (vapiResponse.ok) {
           const callData = await vapiResponse.json()
           console.log('✅ Vapi call data received successfully')
+
+          // Extract recording URL
+          if (callData.artifact?.recordingUrl) {
+            recordingUrl = callData.artifact.recordingUrl
+            console.log('🎙️ Found recording URL in artifact')
+          } else if (callData.recordingUrl) {
+            recordingUrl = callData.recordingUrl
+            console.log('🎙️ Found recording URL at top level')
+          }
 
           // Extract messages with timestamps
           if (callData.artifact?.messages) {
@@ -84,7 +94,7 @@ export async function POST(request: Request) {
       console.log('Interview duration:', durationSeconds, 'seconds')
     }
 
-    // Update interview with transcript and duration
+    // Update interview with transcript, duration, and recording URL
     await supabase
       .from('interviews')
       .update({
@@ -92,6 +102,7 @@ export async function POST(request: Request) {
         completed_at: new Date().toISOString(),
         duration_seconds: durationSeconds,
         vapi_call_id: vapiCallId,
+        recording_url: recordingUrl,
         status: 'completed'
       })
       .eq('id', interview.id)

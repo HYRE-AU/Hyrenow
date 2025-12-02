@@ -202,10 +202,34 @@ Be specific about how their strengths/concerns relate to the responsibilities th
         const wordCount = qa.answer.split(' ').length
         const durationSeconds = Math.round(wordCount / 2)
 
+        // Build a meaningful evaluation summary
+        let evaluationSummary = 'No evaluation available'
+        if (evaluationData) {
+          const score = evaluationData.score || 0
+          const hasStrengths = evaluationData.strengths?.length > 0
+          const hasConcerns = evaluationData.concerns?.length > 0
+
+          if (hasStrengths) {
+            // If there are strengths, show them
+            evaluationSummary = evaluationData.strengths.join('. ')
+          } else if (hasConcerns) {
+            // If no strengths but has concerns, show score context + main concern
+            const scoreLabel = score <= 1 ? 'Below expectations' : score === 2 ? 'Partially meets expectations' : 'Meets expectations'
+            evaluationSummary = `${scoreLabel}: ${evaluationData.concerns[0]}`
+          } else if (score) {
+            // Fallback to just score description
+            evaluationSummary = score <= 1 ? 'Response did not demonstrate the required competency' :
+                               score === 2 ? 'Response partially demonstrated the competency' :
+                               score === 3 ? 'Response adequately demonstrated the competency' :
+                               'Response strongly demonstrated the competency'
+          }
+        }
+
         return {
           question: qa.question,
-          evaluation: evaluationData?.strengths?.[0] || 'No evaluation available',
-          answer_duration_seconds: durationSeconds
+          evaluation: evaluationSummary,
+          answer_duration_seconds: durationSeconds,
+          score: evaluationData?.score || null
         }
       })
 

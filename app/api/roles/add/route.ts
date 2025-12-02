@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: Request) {
   try {
-    const { title, description, companyName, competencies, questions, knockoutQuestions } = await request.json()
+    const { title, description, companyName, competencies, questions, knockoutQuestions, roleBriefing } = await request.json()
 
     // Get auth header
     const authHeader = request.headers.get('authorization')
@@ -46,6 +46,7 @@ export async function POST(request: Request) {
         title,
         jd_text: description,
         company_name: companyName || null,
+        role_briefing: roleBriefing?.trim() || null,
         status: 'active',
       })
       .select()

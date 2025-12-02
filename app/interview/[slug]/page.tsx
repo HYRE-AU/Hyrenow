@@ -22,6 +22,7 @@ type Interview = {
     title: string
     jd_text: string
     company_name: string | null
+    role_briefing: string | null
     organisations: {
       name: string
     }
@@ -169,26 +170,45 @@ export default function InterviewPage() {
         model: {
           provider: 'openai',
           model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a professional AI interviewer conducting an interview for the position of ${interview.roles.title} at ${interview.roles.company_name || interview.roles.organisations.name}.
+messages: [
+              {
+                role: 'system',
+                content: `You are a warm, professional AI interviewer conducting a screening interview for the position of ${interview.roles.title} at ${interview.roles.company_name || interview.roles.organisations.name}.
 
 The candidate's name is ${interview.candidates.name}. Address them by their first name (${interview.candidates.name.split(' ')[0]}) throughout the interview.
 
-You will ask the following questions one at a time:
+${interview.roles.role_briefing ? `CRITICAL - ROLE BRIEFING TO DELIVER:
+Your FIRST task after greeting is to brief the candidate about this opportunity. You have the following key points to convey:
+
+${interview.roles.role_briefing}
+
+IMPORTANT INSTRUCTIONS FOR DELIVERING THE BRIEFING:
+- Do NOT read these bullet points verbatim - that sounds robotic and unnatural
+- Instead, weave these points into flowing, conversational sentences as if you're genuinely excited to tell them about this opportunity
+- Use natural transitions like "So basically...", "What's really exciting is...", "You'd be working with...", "The team is..."
+- Speak as a friendly recruiter would - warm, enthusiastic, and informative
+- Keep it to about 60-90 seconds of natural speech
+- After the briefing, pause briefly and ask if they have any quick questions before starting the interview questions
+
+Example of BAD delivery: "Bullet point one: Series A funding. Bullet point two: Team of 15."
+Example of GOOD delivery: "So the company recently closed their Series A which is really exciting - they're in growth mode. The team right now is about 15 people but scaling up to 25 this year, so you'd be joining at a great time."
+
+` : ''}
+INTERVIEW QUESTIONS:
+After the briefing (or greeting if no briefing), you will ask the following questions one at a time:
 ${interview.questions.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}
 
-Ask each question naturally, wait for the candidate's full response, acknowledge their answer briefly, and move to the next question. Be professional, encouraging, and conversational. After all questions, thank them for their time.`
-            }
-          ]
+Ask each question naturally, wait for the candidate's full response, acknowledge their answer briefly with something genuine (not just "great" or "thanks"), then transition smoothly to the next question. Be professional, encouraging, and conversational. After all questions, thank them warmly for their time and let them know the team will be in touch.`
+              }
+            ]
         },
         voice: {
           provider: '11labs',
-          voiceId: 'paula'
+          voiceId: '21m00Tcm4TlvDq8ikWAM' // Rachel - warm, friendly, energetic
         },
-        firstMessage: `Hello ${interview.candidates.name.split(' ')[0]}! Thank you for joining us today for the ${interview.roles.title} interview. I'll be asking you ${interview.questions.length} questions. Are you ready to begin?`,
-        metadata: {
+        firstMessage: interview.roles.role_briefing
+          ? `Hi ${interview.candidates.name.split(' ')[0]}! Thanks so much for joining me today. I'm really excited to chat with you about the ${interview.roles.title} role at ${interview.roles.company_name || interview.roles.organisations.name}. Before we jump into the interview questions, let me give you a bit of background on the company and what makes this opportunity special.`
+          : `Hi ${interview.candidates.name.split(' ')[0]}! Thanks so much for joining me today for the ${interview.roles.title} interview. I've got ${interview.questions.length} questions for us to go through. Ready to get started?`,        metadata: {
           interviewSlug: slug
         }
       })
