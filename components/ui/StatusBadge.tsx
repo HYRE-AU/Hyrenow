@@ -48,7 +48,11 @@ const statusConfig = {
 };
 
 export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || {
+    label: status || 'Unknown',
+    icon: Clock,
+    classes: 'bg-gray-100 text-gray-600 border-gray-300'
+  };
   const Icon = config.icon;
 
   return (
