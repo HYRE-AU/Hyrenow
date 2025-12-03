@@ -1,10 +1,30 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logError } from '@/lib/errorLogger'
 
 export async function POST(request: Request) {
+  let interviewId: string | undefined
+
   try {
-    const { interviewId, responses } = await request.json()
+    const body = await request.json()
+    interviewId = body.interviewId
+    const { responses } = body
     // responses = [{ knockoutQuestionId, answer }]
+
+    // Validate required fields
+    if (!interviewId) {
+      return NextResponse.json(
+        { error: 'Interview ID is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!responses || !Array.isArray(responses)) {
+      return NextResponse.json(
+        { error: 'Responses array is required' },
+        { status: 400 }
+      )
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,13 +32,19 @@ export async function POST(request: Request) {
     )
 
     // Get the interview and knockout questions
-    const { data: interview } = await supabase
+    const { data: interview, error: fetchError } = await supabase
       .from('interviews')
-      .select('id, role_id')
+      .select('id, role_id, status')
       .eq('id', interviewId)
       .single()
 
-    if (!interview) {
+    if (fetchError || !interview) {
+      await logError({
+        endpoint: '/api/interview/knockout',
+        errorType: 'interview_not_found',
+        errorMessage: `Interview not found: ${interviewId}`,
+        interviewId
+      })
       return NextResponse.json({ error: 'Interview not found' }, { status: 404 })
     }
 
@@ -78,6 +104,18 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Knockout submission error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+
+    await logError({
+      endpoint: '/api/interview/knockout',
+      errorType: 'knockout_exception',
+      errorMessage: error.message || 'Failed to submit knockout responses',
+      errorStack: error.stack,
+      interviewId
+    })
+
+    return NextResponse.json(
+      { error: error.message || 'Failed to submit knockout responses' },
+      { status: 500 }
+    )
   }
 }

@@ -1,26 +1,77 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
+import { logError } from '@/lib/errorLogger'
+import { getAuthenticatedUserWithProfile } from '@/lib/auth'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
 export async function POST(request: Request) {
+  let interviewId: string | undefined
+
   try {
-    const { interviewId, candidateName, candidateEmail, roleTitle, companyName } = await request.json()
+    // Require authentication - this is a hiring manager action
+    const userWithProfile = await getAuthenticatedUserWithProfile()
+    if (!userWithProfile) {
+      return NextResponse.json(
+        { error: 'Unauthorized - please log in' },
+        { status: 401 }
+      )
+    }
+
+    const { profile } = userWithProfile
+    const body = await request.json()
+    interviewId = body.interviewId
+    const { candidateName, candidateEmail, roleTitle, companyName } = body
+
+    // Validate required fields
+    if (!interviewId) {
+      return NextResponse.json(
+        { error: 'Interview ID is required' },
+        { status: 400 }
+      )
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_KEY!
     )
 
-    // Get interview evaluation
-    const { data: interview } = await supabase
+    // Get interview evaluation and verify ownership
+    const { data: interview, error: fetchError } = await supabase
       .from('interviews')
-      .select('structured_evaluation, recommendation')
+      .select('structured_evaluation, recommendation, org_id')
       .eq('id', interviewId)
       .single()
+
+    if (fetchError || !interview) {
+      await logError({
+        endpoint: '/api/interview/reject',
+        errorType: 'interview_not_found',
+        errorMessage: `Interview not found: ${interviewId}`,
+        interviewId
+      })
+      return NextResponse.json(
+        { error: 'Interview not found' },
+        { status: 404 }
+      )
+    }
+
+    // Verify organization ownership
+    if (interview.org_id !== profile.org_id) {
+      await logError({
+        endpoint: '/api/interview/reject',
+        errorType: 'unauthorized_access',
+        errorMessage: `User org ${profile.org_id} attempted to reject interview from org ${interview.org_id}`,
+        interviewId
+      })
+      return NextResponse.json(
+        { error: 'Interview not found' },
+        { status: 404 }
+      )
+    }
 
     // Generate personalized rejection reason using AI
     let rejectionReason = 'We felt other candidates were a closer match for this particular role.'
@@ -82,8 +133,17 @@ The ${companyName} Team`
     })
   } catch (error: any) {
     console.error('Rejection error:', error)
+
+    await logError({
+      endpoint: '/api/interview/reject',
+      errorType: 'reject_exception',
+      errorMessage: error.message || 'Failed to reject interview',
+      errorStack: error.stack,
+      interviewId
+    })
+
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Failed to reject interview' },
       { status: 500 }
     )
   }

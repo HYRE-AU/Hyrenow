@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logError } from '@/lib/errorLogger'
 
 export async function POST(request: Request) {
+  let roleTitle: string | undefined
+
   try {
     const { title, description, companyName, competencies, questions, knockoutQuestions, roleBriefing } = await request.json()
+    roleTitle = title
 
     // Get auth header
     const authHeader = request.headers.get('authorization')
@@ -115,8 +119,17 @@ const competencyInserts = competencies.map((c: any) => ({
     return NextResponse.json({ roleId: role.id })
   } catch (error: any) {
     console.error('Role creation error:', error)
+
+    await logError({
+      endpoint: '/api/roles/add',
+      errorType: 'role_creation_exception',
+      errorMessage: error.message || 'Failed to create role',
+      errorStack: error.stack,
+      requestBody: { roleTitle }
+    })
+
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Failed to create role' },
       { status: 500 }
     )
   }

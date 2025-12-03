@@ -15,8 +15,11 @@ export async function GET() {
     return authResult.response
   }
 
+  const { profile } = authResult
+
   try {
     // Query interviews with failed or pending_retry evaluation status
+    // Filter by organization
     const { data: failedByStatus, error: statusError } = await supabase
       .from('interviews')
       .select(`
@@ -30,6 +33,7 @@ export async function GET() {
         candidate:candidates(id, name, email),
         role:roles(id, title)
       `)
+      .eq('org_id', profile.org_id)
       .in('evaluation_status', ['failed', 'pending_retry'])
       .order('completed_at', { ascending: false })
 
@@ -38,6 +42,7 @@ export async function GET() {
     }
 
     // Query completed interviews missing evaluation (edge case)
+    // Filter by organization
     const { data: missingEvaluation, error: missingError } = await supabase
       .from('interviews')
       .select(`
@@ -51,6 +56,7 @@ export async function GET() {
         candidate:candidates(id, name, email),
         role:roles(id, title)
       `)
+      .eq('org_id', profile.org_id)
       .eq('status', 'completed')
       .is('structured_evaluation', null)
       .not('evaluation_status', 'in', '("in_progress","completed")')

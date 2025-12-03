@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     return authResult.response
   }
 
+  const { profile } = authResult
   let interviewId: string | undefined
 
   try {
@@ -28,10 +29,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch interview with transcript
+    // Fetch interview with transcript and verify ownership
     const { data: interview, error: fetchError } = await supabase
       .from('interviews')
-      .select('id, slug, transcript, evaluation_status')
+      .select('id, slug, transcript, evaluation_status, org_id')
       .eq('id', interviewId)
       .single()
 
@@ -40,6 +41,20 @@ export async function POST(request: Request) {
         endpoint: '/api/admin/retry-evaluation',
         errorType: 'interview_not_found',
         errorMessage: fetchError?.message || `Interview not found: ${interviewId}`,
+        interviewId
+      })
+      return NextResponse.json(
+        { error: 'Interview not found' },
+        { status: 404 }
+      )
+    }
+
+    // Verify organization ownership
+    if (interview.org_id !== profile.org_id) {
+      await logError({
+        endpoint: '/api/admin/retry-evaluation',
+        errorType: 'unauthorized_access',
+        errorMessage: `Admin org ${profile.org_id} attempted to retry evaluation for interview from org ${interview.org_id}`,
         interviewId
       })
       return NextResponse.json(

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { nanoid } from 'nanoid'
+import { logError } from '@/lib/errorLogger'
 
 export async function POST(request: Request) {
+  let requestRoleId: string | undefined
+
   try {
     const { roleId, candidates } = await request.json()
+    requestRoleId = roleId
 
     // Get auth header
     const authHeader = request.headers.get('authorization')
@@ -107,8 +111,17 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('Candidate invitation error:', error)
+
+    await logError({
+      endpoint: '/api/candidates/invite',
+      errorType: 'invite_exception',
+      errorMessage: error.message || 'Failed to invite candidates',
+      errorStack: error.stack,
+      requestBody: { roleId: requestRoleId }
+    })
+
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Failed to invite candidates' },
       { status: 500 }
     )
   }

@@ -116,9 +116,8 @@ export async function requireAdmin(): Promise<
   const { user, profile } = userWithProfile
 
   // Check if user has admin role
-  // For now, all authenticated users can access admin routes
-  // TODO: Add is_admin column to profiles table and check it here
-  const isAdmin = profile.is_admin === true || true // Temporary: allow all authenticated users
+  // Note: Ensure is_admin column exists in profiles table
+  const isAdmin = profile.is_admin === true
 
   if (!isAdmin) {
     return {
