@@ -55,17 +55,25 @@ export async function POST(request: Request) {
 {
   "title": "<job title>",
   "companyName": "<company name>",
-  "description": "<full job description including responsibilities, requirements, etc.>"
+  "description": "<VERBATIM job description text>"
 }
+
+CRITICAL INSTRUCTIONS FOR THE DESCRIPTION FIELD:
+- Extract the COMPLETE, VERBATIM job description text exactly as written in the original posting
+- DO NOT summarize, condense, or paraphrase ANY part of the description
+- Include ALL sections: About the company, responsibilities, requirements, qualifications, benefits, compensation, etc.
+- Preserve the original formatting and wording as much as possible
+- Include bullet points as plain text (use newlines)
+- The description should be a faithful reproduction of the job posting content
 
 If you cannot find clear information, return empty strings.`
         },
         {
           role: 'user',
-          content: jobText.substring(0, 10000) // Limit to avoid token limits
+          content: jobText.substring(0, 15000) // Increased limit for full job descriptions
         }
       ],
-      temperature: 0.3,
+      temperature: 0.1, // Lower temperature for more faithful extraction
     })
 
     const content = extraction.choices[0].message.content
