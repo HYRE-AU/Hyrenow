@@ -893,7 +893,7 @@ export default function NewRolePage() {
                 type="text"
                 value={newKnockoutQuestion}
                 onChange={(e) => setNewKnockoutQuestion(e.target.value)}
-                placeholder="e.g., Do you have permanent working rights in Malaysia?"
+                placeholder="e.g., Do you have the right to work in this location?"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 onKeyDown={(e) => e.key === 'Enter' && addKnockoutQuestion()}
               />
@@ -937,10 +937,10 @@ export default function NewRolePage() {
               <p className="text-xs text-gray-500 mb-2">Example questions (click to use):</p>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { text: 'Do you have permanent working rights in Malaysia without sponsorship?', answer: true },
-                  { text: 'Are you currently based in Malaysia or willing to relocate?', answer: true },
-                  { text: 'Are you open to a salary range of 8,000-9,000 MYR?', answer: true },
-                  { text: 'Do you have at least 2 years of agency experience?', answer: true },
+                  { text: 'Do you have the right to work in this location?', answer: true },
+                  { text: 'Are you available to start within the required timeframe?', answer: true },
+                  { text: 'Do you meet the minimum experience requirements?', answer: true },
+                  { text: 'Are you comfortable with the salary range offered?', answer: true },
                   { text: 'Will you require visa sponsorship?', answer: false },
                 ].map((example, i) => (
                   <button
