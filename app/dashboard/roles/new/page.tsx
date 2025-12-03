@@ -66,7 +66,10 @@ export default function NewRolePage() {
   const [knockoutQuestions, setKnockoutQuestions] = useState<KnockoutQuestion[]>([])
   const [newKnockoutQuestion, setNewKnockoutQuestion] = useState('')
   const [newKnockoutRequiredAnswer, setNewKnockoutRequiredAnswer] = useState(true)
-  
+
+  // UI State
+  const [expandedCompetencyIndex, setExpandedCompetencyIndex] = useState<number | null>(null)
+
   const router = useRouter()
 
   async function parseJobUrl() {
@@ -322,133 +325,277 @@ export default function NewRolePage() {
   // STEP 2: Competencies
   if (step === 'competencies') {
     return (
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <div className="mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-5xl mx-auto">
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">1</div>
+              <span className="text-purple-600 font-medium">Job Details</span>
+            </div>
+            <div className="flex-1 h-1 bg-purple-600 mx-3"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">2</div>
+              <span className="text-purple-600 font-medium">Competencies</span>
+            </div>
+            <div className="flex-1 h-1 bg-gray-200 mx-3"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">3</div>
+              <span className="text-gray-500">Questions</span>
+            </div>
+            <div className="flex-1 h-1 bg-gray-200 mx-3"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">4</div>
+              <span className="text-gray-500">Review</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 text-white">
             <button
               onClick={() => setStep('details')}
-              className="text-purple-600 hover:text-purple-700 flex items-center gap-2"
+              className="text-purple-200 hover:text-white flex items-center gap-2 mb-4 text-sm"
             >
-              ← Back to Details
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Job Details
+            </button>
+            <h1 className="text-2xl font-bold mb-2">Evaluation Criteria</h1>
+            <p className="text-purple-100 text-sm">
+              These are the skills and qualities the AI will assess during the interview. Each competency has scoring criteria to ensure fair, consistent evaluation.
+            </p>
+          </div>
+
+          {/* Explanation Card */}
+          <div className="px-8 py-4 bg-purple-50 border-b border-purple-100">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-purple-900 text-sm">How it works</h3>
+                <p className="text-purple-700 text-sm mt-1">
+                  The AI asks questions to assess each competency, then scores candidates 1-4 based on their responses.
+                  <span className="font-medium"> Priority weights</span> determine how much each competency affects the final score.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Competencies List */}
+          <div className="p-8">
+            <div className="space-y-4">
+              {competencies.map((comp, index) => (
+                <div
+                  key={index}
+                  className={`border rounded-xl overflow-hidden transition-all duration-200 ${
+                    expandedCompetencyIndex === index
+                      ? 'border-purple-300 shadow-lg shadow-purple-100'
+                      : 'border-gray-200 hover:border-purple-200'
+                  }`}
+                >
+                  {/* Competency Header - Always Visible */}
+                  <div className="p-5 bg-white">
+                    <div className="flex items-start gap-4">
+                      {/* Priority Indicator */}
+                      <div className={`w-2 h-full min-h-[80px] rounded-full flex-shrink-0 ${
+                        comp.weight === 3 ? 'bg-red-500' :
+                        comp.weight === 2 ? 'bg-amber-500' : 'bg-gray-300'
+                      }`}></div>
+
+                      <div className="flex-1 min-w-0">
+                        {/* Name & Priority Row */}
+                        <div className="flex items-center gap-3 mb-2">
+                          <input
+                            type="text"
+                            value={comp.name}
+                            onChange={(e) => updateCompetency(index, 'name', e.target.value)}
+                            className="text-lg font-semibold text-gray-900 border-0 border-b-2 border-transparent hover:border-gray-200 focus:border-purple-500 focus:ring-0 px-0 py-1 flex-1 bg-transparent"
+                            placeholder="Competency name"
+                          />
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                            comp.weight === 3 ? 'bg-red-100 text-red-700' :
+                            comp.weight === 2 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {comp.weight === 3 ? 'Must Have' : comp.weight === 2 ? 'Important' : 'Nice to Have'}
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <textarea
+                          value={comp.description}
+                          onChange={(e) => updateCompetency(index, 'description', e.target.value)}
+                          rows={2}
+                          className="w-full text-sm text-gray-600 border-0 focus:ring-0 px-0 py-1 resize-none bg-transparent"
+                          placeholder="Brief description of what this competency measures..."
+                        />
+
+                        {/* Priority Selector */}
+                        <div className="flex items-center gap-2 mt-3">
+                          <span className="text-xs text-gray-500 mr-2">Priority:</span>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => updateCompetency(index, 'weight', 3)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                comp.weight === 3
+                                  ? 'bg-red-600 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+                              }`}
+                            >
+                              Must Have
+                            </button>
+                            <button
+                              onClick={() => updateCompetency(index, 'weight', 2)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                comp.weight === 2
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-600'
+                              }`}
+                            >
+                              Important
+                            </button>
+                            <button
+                              onClick={() => updateCompetency(index, 'weight', 1)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                comp.weight === 1
+                                  ? 'bg-gray-500 text-white'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              Nice to Have
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => setExpandedCompetencyIndex(expandedCompetencyIndex === index ? null : index)}
+                          className={`p-2 rounded-lg transition-all ${
+                            expandedCompetencyIndex === index
+                              ? 'bg-purple-100 text-purple-600'
+                              : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                          }`}
+                          title="Edit scoring rubric"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => removeCompetency(index)}
+                          className="p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-all"
+                          title="Remove competency"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded BARS Rubric Section */}
+                  {expandedCompetencyIndex === index && (
+                    <div className="border-t border-gray-100 bg-gray-50 p-5">
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Scoring Rubric
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Define what each score level looks like for this competency
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        {([
+                          { key: 'level_1', color: 'red', label: '1 - Below' },
+                          { key: 'level_2', color: 'amber', label: '2 - Meets' },
+                          { key: 'level_3', color: 'green', label: '3 - Exceeds' },
+                          { key: 'level_4', color: 'purple', label: '4 - Outstanding' }
+                        ] as const).map((level) => (
+                          <div
+                            key={level.key}
+                            className={`bg-white rounded-lg border-2 p-3 ${
+                              level.color === 'red' ? 'border-red-200' :
+                              level.color === 'amber' ? 'border-amber-200' :
+                              level.color === 'green' ? 'border-green-200' : 'border-purple-200'
+                            }`}
+                          >
+                            <div className={`text-xs font-bold mb-2 ${
+                              level.color === 'red' ? 'text-red-600' :
+                              level.color === 'amber' ? 'text-amber-600' :
+                              level.color === 'green' ? 'text-green-600' : 'text-purple-600'
+                            }`}>
+                              {level.label}
+                            </div>
+                            <textarea
+                              value={comp.bars_rubric[level.key].description}
+                              onChange={(e) => updateCompetency(index, `bars_rubric.${level.key}`, e.target.value)}
+                              rows={3}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+                              placeholder={`What does a "${level.label.split(' - ')[1]}" response look like?`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Add Competency Button */}
+            <button
+              onClick={addCompetency}
+              className="w-full mt-4 px-6 py-4 border-2 border-dashed border-gray-300 text-gray-500 rounded-xl hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 font-medium transition-all flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add Another Competency
             </button>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Competency Matrix</h1>
-          <p className="text-gray-600 mb-8">
-            Review and customize the competencies used to evaluate candidates
-          </p>
-
-          <div className="space-y-6 mb-6">
-            {competencies.map((comp, index) => (
-              <div key={index} className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1 mr-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Competency Name
-                    </label>
-                    <input
-                      type="text"
-                      value={comp.name}
-                      onChange={(e) => updateCompetency(index, 'name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                  <button
-                    onClick={() => removeCompetency(index)}
-                    className="text-red-500 hover:text-red-700 px-3 py-2"
-                  >
-                    ✕ Remove
-                  </button>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={comp.description}
-                    onChange={(e) => updateCompetency(index, 'description', e.target.value)}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Weight
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => updateCompetency(index, 'weight', 3)}
-                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                        comp.weight === 3
-                          ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-red-400'
-                      }`}
-                    >
-                      Critical 3×
-                    </button>
-                    <button
-                      onClick={() => updateCompetency(index, 'weight', 2)}
-                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                        comp.weight === 2
-                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
-                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-amber-400'
-                      }`}
-                    >
-                      Important 2×
-                    </button>
-                    <button
-                      onClick={() => updateCompetency(index, 'weight', 1)}
-                      className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                        comp.weight === 1
-                          ? 'bg-gray-500 text-white shadow-lg shadow-gray-500/30'
-                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-400'
-                      }`}
-                    >
-                      Nice-to-Have 1×
-                    </button>
-                  </div>
-                </div>
-
-                <details className="mt-4">
-                  <summary className="text-sm font-semibold text-purple-700 cursor-pointer">
-                    View BARS Rubric (Scoring Levels)
-                  </summary>
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(['level_1', 'level_2', 'level_3', 'level_4'] as const).map((level) => (
-                      <div key={level} className="bg-white p-3 rounded-lg border">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                          {comp.bars_rubric[level].label}
-                        </label>
-                        <textarea
-                          value={comp.bars_rubric[level].description}
-                          onChange={(e) => updateCompetency(index, `bars_rubric.${level}`, e.target.value)}
-                          rows={2}
-                          className="w-full px-2 py-1 text-sm border border-gray-200 rounded"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              </div>
-            ))}
+          {/* Footer Actions */}
+          <div className="px-8 py-6 bg-gray-50 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                {competencies.length} competenc{competencies.length === 1 ? 'y' : 'ies'} configured
+              </p>
+              <button
+                onClick={generateInterviewQuestions}
+                disabled={loading || competencies.length === 0}
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/25 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating Questions...
+                  </>
+                ) : (
+                  <>
+                    Continue to Questions
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={addCompetency}
-            className="w-full mb-4 px-6 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-400 hover:text-purple-600 font-medium"
-          >
-            + Add Competency
-          </button>
-
-          <button
-            onClick={generateInterviewQuestions}
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
-          >
-            {loading ? 'Generating Questions...' : 'Continue to Questions'}
-          </button>
         </div>
       </div>
     )
