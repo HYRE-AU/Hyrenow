@@ -9,6 +9,7 @@ import {
   CheckCircle2, AlertTriangle, TrendingUp, MessageSquare,
   Copy, ExternalLink, ChevronDown, ChevronRight, Scale
 } from 'lucide-react'
+import posthog from 'posthog-js'
 
 type Candidate = {
   id: string
@@ -162,6 +163,14 @@ const { data: interviewsData, error: interviewsError } = await supabase
         i.id === interview.id ? { ...i, status: 'progressed', progressed_at: new Date().toISOString() } : i
       ))
 
+      posthog.capture('candidate_progressed', {
+        interview_id: interview.id,
+        candidate_name: candidate!.name,
+        role_title: interview.roles?.title,
+        recommendation: interview.structured_evaluation?.recommendation,
+        score: interview.score
+      })
+
       alert('✅ Candidate marked as progressed!')
     } catch (error) {
       alert('Failed to update candidate status')
@@ -199,6 +208,14 @@ const { data: interviewsData, error: interviewsError } = await supabase
       setInterviews(interviews.map(i =>
         i.id === interview.id ? { ...i, status: 'rejected', rejected_at: new Date().toISOString() } : i
       ))
+
+      posthog.capture('candidate_rejected', {
+        interview_id: interview.id,
+        candidate_name: candidate!.name,
+        role_title: interview.roles?.title,
+        recommendation: interview.structured_evaluation?.recommendation,
+        score: interview.score
+      })
 
       // Open mailto link
       const mailtoLink = `mailto:${candidate!.email}?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(data.emailBody)}`
@@ -341,6 +358,12 @@ const getRecommendationColor = (rec: string) => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3"
+                    onClick={() => {
+                      posthog.capture('cv_viewed', {
+                        candidate_id: candidate.id,
+                        candidate_name: candidate.name
+                      })
+                    }}
                   >
                     <div className="bg-gradient-to-br from-[#5B8DEF] to-[#9D6DD9] p-3 rounded-xl shadow-md">
                       <FileText className="w-6 h-6 text-white" />
@@ -529,7 +552,20 @@ const getRecommendationColor = (rec: string) => {
                         {interview.structured_evaluation && (
                           <GlassButton
                             variant="ghost"
-                            onClick={() => setExpandedInterview(expandedInterview === interview.id ? null : interview.id)}
+                            onClick={() => {
+                              const isExpanding = expandedInterview !== interview.id
+                              setExpandedInterview(isExpanding ? interview.id : null)
+
+                              if (isExpanding) {
+                                posthog.capture('evaluation_viewed', {
+                                  interview_id: interview.id,
+                                  candidate_name: candidate.name,
+                                  role_title: interview.roles?.title,
+                                  recommendation: interview.structured_evaluation?.recommendation,
+                                  score: interview.score
+                                })
+                              }
+                            }}
                             className="w-full mt-4"
                             icon={expandedInterview === interview.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                           >
@@ -766,11 +802,19 @@ const getRecommendationColor = (rec: string) => {
         Listen to assess communication quality
       </span>
     </div>
-    <audio 
-      controls 
+    <audio
+      controls
       src={interview.recording_url}
       className="w-full"
       preload="metadata"
+      onPlay={() => {
+        posthog.capture('recording_played', {
+          interview_id: interview.id,
+          candidate_name: candidate.name,
+          role_title: interview.roles?.title,
+          duration_seconds: interview.duration_seconds
+        })
+      }}
     >
       Your browser does not support the audio element.
     </audio>
@@ -780,7 +824,15 @@ const getRecommendationColor = (rec: string) => {
 {/* Transcript */}
                           {interview.transcript && (
                             <GlassCard className="p-4">
-                              <details>
+                              <details onToggle={(e) => {
+                                if ((e.target as HTMLDetailsElement).open) {
+                                  posthog.capture('transcript_viewed', {
+                                    interview_id: interview.id,
+                                    candidate_name: candidate.name,
+                                    role_title: interview.roles?.title
+                                  })
+                                }
+                              }}>
                                 <summary className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-purple-600 flex items-center gap-2">
                                   <FileText className="w-5 h-5 text-purple-600" />
                                   View Full Transcript
@@ -814,6 +866,12 @@ const getRecommendationColor = (rec: string) => {
                               onClick={(e) => {
                                 e && e.stopPropagation()
                                 navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL}/interview/${interview.slug}`)
+                                posthog.capture('interview_link_copied', {
+                                  interview_id: interview.id,
+                                  candidate_name: candidate.name,
+                                  role_title: interview.roles?.title,
+                                  source: 'candidate_profile'
+                                })
                                 alert('Link copied!')
                               }}
                               icon={<Copy className="w-4 h-4" />}

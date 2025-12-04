@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Vapi from '@vapi-ai/web'
+import posthog from 'posthog-js'
 
 type KnockoutQuestion = {
   id: string
@@ -134,9 +135,22 @@ export default function InterviewPage() {
 
       const data = await res.json()
 
+      posthog.capture('knockout_submitted', {
+        interview_id: interview.id,
+        candidate_name: interview.candidates.name,
+        role_title: interview.roles.title,
+        passed: data.passed,
+        questions_count: interview.knockoutQuestions.length
+      })
+
       if (data.passed) {
         setStep('landing')
       } else {
+        posthog.capture('knockout_failed', {
+          interview_id: interview.id,
+          candidate_name: interview.candidates.name,
+          role_title: interview.roles.title
+        })
         setStep('screened_out')
       }
     } catch (err) {
@@ -218,6 +232,15 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
       
       setCallState('active')
       setStep('interview')
+
+      posthog.capture('interview_started', {
+        interview_id: interview.id,
+        candidate_name: interview.candidates.name,
+        role_title: interview.roles.title,
+        company_name: interview.roles.company_name || interview.roles.organisations.name,
+        questions_count: interview.questions.length,
+        has_role_briefing: !!interview.roles.role_briefing
+      })
     } catch (err: any) {
       console.error('Call failed:', err)
       setError('Failed to start interview. Please try again.')
@@ -244,6 +267,14 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
       })
 
       if (!response.ok) throw new Error('Failed to submit feedback')
+
+      posthog.capture('candidate_feedback_submitted', {
+        interview_id: interview!.id,
+        candidate_name: interview?.candidates.name,
+        role_title: interview?.roles.title,
+        rating: surveyRating,
+        has_feedback_text: !!surveyFeedback.trim()
+      })
 
       setSurveySubmitted(true)
     } catch (error) {
@@ -274,6 +305,14 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
       console.log('Call ended')
       console.log('📤 Sending Vapi call ID to complete endpoint:', vapiCallIdRef.current)
       setCallState('ended')
+
+      posthog.capture('interview_completed', {
+        interview_id: interview?.id,
+        candidate_name: interview?.candidates.name,
+        role_title: interview?.roles.title,
+        company_name: interview?.roles.company_name || interview?.roles.organisations.name,
+        questions_count: interview?.questions.length
+      })
 
       await fetch('/api/interview/complete', {
         method: 'POST',
@@ -554,7 +593,14 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
                 ← Back
               </button>
               <button
-                onClick={() => setStep('preparation')}
+                onClick={() => {
+                  posthog.capture('interview_consent_given', {
+                    interview_id: interview?.id,
+                    candidate_name: interview?.candidates.name,
+                    role_title: interview?.roles.title
+                  })
+                  setStep('preparation')
+                }}
                 disabled={!consentChecked}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >

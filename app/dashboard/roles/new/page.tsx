@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import posthog from 'posthog-js'
 
 type Competency = {
   name: string
@@ -95,6 +96,13 @@ export default function NewRolePage() {
       setTitle(data.title || '')
       setDescription(data.description || '')
       setCompanyName(data.companyName || '')
+
+      posthog.capture('job_description_parsed', {
+        job_url: jobUrl,
+        parsed_title: data.title,
+        parsed_company: data.companyName,
+        has_description: !!data.description
+      })
     } catch (error: any) {
       alert(error.message || 'Failed to parse job URL. Please enter details manually.')
     } finally {
@@ -314,6 +322,18 @@ export default function NewRolePage() {
       if (!response.ok) throw new Error('Failed to create role')
 
       const data = await response.json()
+
+      posthog.capture('role_created', {
+        role_id: data.roleId,
+        role_title: title,
+        company_name: companyName,
+        competencies_count: competencies.length,
+        interview_questions_count: interviewQuestions.length,
+        screening_questions_count: screeningQuestions.length,
+        knockout_questions_count: knockoutQuestions.length,
+        has_role_briefing: !!roleBriefing
+      })
+
       router.push(`/dashboard/roles/${data.roleId}`)
     } catch (error) {
       alert('Failed to create role')

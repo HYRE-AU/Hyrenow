@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import posthog from 'posthog-js'
 
 type Candidate = {
   firstName: string
@@ -117,6 +118,17 @@ export default function InviteCandidatesPage() {
         error: result.error
       }))
 
+      // Track each successful invitation
+      const successfulInvites = results.filter(r => !r.error)
+      successfulInvites.forEach(candidate => {
+        posthog.capture('candidate_invited', {
+          candidate_name: `${candidate.firstName} ${candidate.lastName}`,
+          candidate_email: candidate.email,
+          role_id: roleId,
+          role_title: role?.title
+        })
+      })
+
       setCandidates(results)
       setStep('success')
     } catch (error: any) {
@@ -197,6 +209,11 @@ The ${orgName} Team`
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL}/interview/${candidate.slug}`)
+                            posthog.capture('interview_link_copied', {
+                              candidate_name: `${candidate.firstName} ${candidate.lastName}`,
+                              role_title: role?.title,
+                              source: 'invite_page'
+                            })
                             alert('Link copied!')
                           }}
                           className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-700"
