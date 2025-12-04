@@ -230,7 +230,7 @@ const { data: interviewsData, error: interviewsError } = await supabase
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <GlassCard className="p-8">
           <div className="flex items-center gap-3">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
@@ -243,7 +243,7 @@ const { data: interviewsData, error: interviewsError } = await supabase
 
   if (!candidate) {
     return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <GlassCard className="p-8 text-center">
           <div className="text-red-600 font-semibold">Candidate not found</div>
         </GlassCard>
@@ -286,7 +286,7 @@ const getRecommendationColor = (rec: string) => {
   }
 
   return (
-    <div className="min-h-screen gradient-mesh">
+    <div className="min-h-full">
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 animate-fadeInUp">
           <GlassButton

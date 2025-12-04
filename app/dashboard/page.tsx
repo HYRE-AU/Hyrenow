@@ -145,7 +145,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <GlassCard className="p-8">
           <div className="flex items-center gap-3">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
@@ -165,7 +165,7 @@ export default function DashboardPage() {
   const activeRoles = roles.filter(r => r.status === 'active').length
 
   return (
-    <div className="gradient-mesh min-h-screen">
+    <div className="min-h-full">
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 animate-fadeInUp">
