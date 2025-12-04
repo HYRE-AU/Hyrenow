@@ -158,22 +158,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, message: 'Already processed' });
       }
 
-      // CONCURRENCY CHECK: Don't process if evaluation is currently in progress
-      if (interview.evaluation_status === 'in_progress') {
-        console.log('⏳ Evaluation already in progress, skipping duplicate webhook');
-        return NextResponse.json({ success: true, message: 'Evaluation in progress' });
+      // CONCURRENCY CHECK: Don't process if evaluation is currently in progress or pending
+      if (interview.evaluation_status === 'processing' || interview.evaluation_status === 'pending') {
+        console.log('⏳ Evaluation already queued or in progress, skipping duplicate webhook');
+        return NextResponse.json({ success: true, message: 'Evaluation already queued' });
       }
 
-      // Update interview with transcript and set evaluation_status to in_progress
+      // Update interview with transcript and set evaluation_status to 'pending'
+      // The cron job will pick this up and process the evaluation asynchronously
       const { error: updateError } = await supabase
         .from('interviews')
         .update({
-          transcript: { text: transcript, messages: messages },
+          transcript: transcript, // Store raw transcript string for cron job
           recording_url: recordingUrl || stereoRecordingUrl,
           vapi_call_id: vapiCallId,
           status: 'completed',
           completed_at: new Date().toISOString(),
-          evaluation_status: 'in_progress',
+          evaluation_status: 'pending', // Cron job will process this
           evaluation_error: null // Clear any previous error
         })
         .eq('slug', interviewSlug);
@@ -190,98 +191,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
 
-      console.log('✅ Interview transcript saved successfully!');
+      console.log('✅ Interview transcript saved, evaluation queued for processing');
+      console.log('📊 Transcript length:', transcript.length, 'characters');
 
-      // Trigger evaluation now that transcript is saved
-      console.log('✅ Triggering evaluation for interview:', interview.id);
-      console.log('📊 Transcript available, length:', transcript.length, 'characters');
-
-      try {
-        console.log('🔄 Calling evaluation endpoint:', `${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`);
-
-        const evaluationResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/interview/evaluate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            interviewId: interview.id,
-            transcript
-          })
-        });
-
-        console.log('📡 Evaluation response status:', evaluationResponse.status);
-
-        if (!evaluationResponse.ok) {
-          const errorText = await evaluationResponse.text();
-          console.error('❌ Evaluation trigger failed with status', evaluationResponse.status);
-          console.error('❌ Error response:', errorText);
-
-          // Mark evaluation as pending_retry so it can be retried later
-          await supabase
-            .from('interviews')
-            .update({
-              evaluation_status: 'pending_retry',
-              evaluation_error: `Evaluation failed (${evaluationResponse.status}): ${errorText.slice(0, 500)}`
-            })
-            .eq('id', interview.id);
-
-          await logError({
-            endpoint: '/api/webhooks/vapi',
-            errorType: 'evaluation_failed',
-            errorMessage: `Evaluation returned ${evaluationResponse.status}: ${errorText.slice(0, 500)}`,
-            interviewId: interview.id,
-            interviewSlug
-          });
-
-          // Still return success - transcript is saved, evaluation can be retried
-          return NextResponse.json({
-            success: true,
-            warning: 'Transcript saved but evaluation failed - marked for retry'
-          });
-        } else {
-          const result = await evaluationResponse.json();
-          console.log('✅ Evaluation triggered successfully:', result);
-
-          // Evaluation endpoint should set evaluation_status to 'completed'
-          // but let's make sure it's set
-          await supabase
-            .from('interviews')
-            .update({
-              evaluation_status: 'completed',
-              evaluation_completed_at: new Date().toISOString(),
-              evaluation_error: null
-            })
-            .eq('id', interview.id);
-        }
-      } catch (evalError: any) {
-        console.error('❌ Evaluation trigger exception:', evalError.message);
-        console.error('❌ Error stack:', evalError.stack);
-
-        // Mark evaluation as pending_retry
-        await supabase
-          .from('interviews')
-          .update({
-            evaluation_status: 'pending_retry',
-            evaluation_error: `Evaluation exception: ${evalError.message}`
-          })
-          .eq('id', interview.id);
-
-        await logError({
-          endpoint: '/api/webhooks/vapi',
-          errorType: 'evaluation_failed',
-          errorMessage: evalError.message,
-          errorStack: evalError.stack,
-          interviewId: interview.id,
-          interviewSlug
-        });
-
-        // Still return success - transcript is saved
-        return NextResponse.json({
-          success: true,
-          warning: 'Transcript saved but evaluation failed - marked for retry'
-        });
-      }
-
-      return NextResponse.json({ success: true });
+      // Return immediately - cron job will handle evaluation asynchronously
+      return NextResponse.json({
+        success: true,
+        message: 'Transcript saved, evaluation queued'
+      });
     }
 
     console.log(`ℹ️ Unhandled message type: ${message?.type}`);
