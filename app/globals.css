@@ -70,10 +70,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth Scrolling & Global Scale */
+/* Smooth Scrolling */
 html {
   scroll-behavior: smooth;
-  zoom: 0.75;
 }
 
 /* Modern Focus Styles */

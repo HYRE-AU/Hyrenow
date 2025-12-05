@@ -42,9 +42,9 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="h-screen gradient-mesh flex overflow-hidden">
+    <div className="min-h-screen gradient-mesh flex">
       {/* Left Sidebar Navigation */}
-      <aside className="w-64 glass-card-strong border-r border-white/20 h-full flex flex-col shadow-glow-purple">
+      <aside className="w-64 glass-card-strong border-r border-white/20 sticky top-0 h-screen flex flex-col shadow-glow-purple">
         {/* Logo */}
         <div className="p-6 border-b border-gray-200/30">
           <Image
@@ -102,7 +102,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto h-full">
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
     </div>
