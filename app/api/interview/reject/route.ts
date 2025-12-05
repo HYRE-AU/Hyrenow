@@ -87,11 +87,18 @@ export async function POST(request: Request) {
           messages: [
             {
               role: 'system',
-              content: `Generate a single professional sentence explaining why a candidate wasn't selected, based on their interview evaluation. Be tactful, constructive, and brief. Focus on "fit" and "current needs" rather than deficiencies. Keep it under 25 words.`
+              content: `Generate a single professional sentence explaining why this candidate wasn't selected, based on their interview evaluation.
+
+IMPORTANT: Address the candidate directly using "you" and "your" (second person) - NOT "the candidate" or "they".
+
+Be tactful, constructive, and brief. Focus on "fit" and "current needs" rather than deficiencies. Keep it under 25 words.
+
+Example good output: "While you showed enthusiasm, we're looking for someone with more hands-on experience in this specific area."
+Example bad output: "The candidate lacked the required experience." (Don't use third person)`
             },
             {
               role: 'user',
-              content: `Interview evaluation: ${evaluationContext}\n\nGenerate ONE tactful sentence for why this candidate wasn't selected.`
+              content: `Interview evaluation: ${evaluationContext}\n\nGenerate ONE tactful sentence addressed directly to the candidate (using "you/your") for why they weren't selected.`
             }
           ],
           temperature: 0.7,

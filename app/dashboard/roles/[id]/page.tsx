@@ -146,17 +146,9 @@ export default function RoleDetailPage() {
 
   // Calculate candidate statistics
   const totalInvited = interviews.length
-  const completed = interviews.filter(i => i.status === 'completed').length
-  const passed = interviews.filter(i =>
-    i.status === 'completed' &&
-    i.structured_evaluation?.recommendation &&
-    ['strong yes', 'yes'].includes(i.structured_evaluation.recommendation.toLowerCase())
-  ).length
-  const rejected = interviews.filter(i =>
-    i.status === 'completed' &&
-    i.structured_evaluation?.recommendation &&
-    ['no', 'strong no'].includes(i.structured_evaluation.recommendation.toLowerCase())
-  ).length
+  const completed = interviews.filter(i => i.status === 'completed' || i.status === 'progressed' || i.status === 'rejected').length
+  const passed = interviews.filter(i => i.status === 'progressed').length
+  const rejected = interviews.filter(i => i.status === 'rejected').length
 
   // Pagination
   const totalPages = Math.ceil(interviews.length / candidatesPerPage)

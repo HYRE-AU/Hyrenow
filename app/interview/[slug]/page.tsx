@@ -553,13 +553,21 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Before We Begin</h1>
 
             {/* Privacy Notice */}
-            <div className="bg-blue-50 rounded-xl p-6 mb-6 border border-blue-100">
+            <div className="bg-blue-50 rounded-xl p-6 mb-8 border border-blue-100">
               <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 🔒 Privacy & Recording Notice
               </h3>
+              <p className="text-gray-700 text-sm mb-3">
+                This interview will be recorded, transcribed, and assessed using AI. Your responses and assessment results will be shared with the hiring team.
+              </p>
               <p className="text-gray-700 text-sm mb-4">
-                This interview will be recorded and transcribed for review by the hiring team.
-                Your data will be handled in accordance with applicable privacy laws.
+                Your data is processed and retained for 30 days before deletion. A human will review your evaluation before any hiring decision is made.
+              </p>
+              <p className="text-gray-700 text-sm mb-4">
+                For full details, see our{' '}
+                <a href="https://hyrenow.io/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">
+                  Privacy Policy
+                </a>.
               </p>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -569,19 +577,9 @@ Ask each question naturally, wait for the candidate's full response, acknowledge
                   className="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                 />
                 <span className="text-sm text-gray-700">
-                  I understand and consent to being recorded for this interview
+                  I understand and consent to the recording of this interview
                 </span>
               </label>
-            </div>
-
-            {/* Contact Info */}
-            <div className="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200">
-              <p className="text-sm text-gray-600">
-                Questions? Contact the recruitment team at{' '}
-                <a href={`mailto:${recruiterEmail}`} className="text-purple-600 hover:underline">
-                  {recruiterEmail}
-                </a>
-              </p>
             </div>
 
             {/* CTAs */}
