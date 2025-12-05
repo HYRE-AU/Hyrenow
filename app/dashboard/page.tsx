@@ -40,6 +40,8 @@ export default function DashboardPage() {
   const [interviewsPage, setInterviewsPage] = useState(1)
   const [totalRoles, setTotalRoles] = useState(0)
   const [totalInterviews, setTotalInterviews] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
+  const [inProgressCount, setInProgressCount] = useState(0)
   const router = useRouter()
 
   const ITEMS_PER_PAGE = 6
@@ -92,7 +94,7 @@ export default function DashboardPage() {
         .order('created_at', { ascending: false })
         .range((rolesPage - 1) * ITEMS_PER_PAGE, rolesPage * ITEMS_PER_PAGE - 1)
 
-      // Fetch interviews with candidates and roles
+      // Fetch interviews with candidates and roles (paginated for display)
       const { data: interviewsData, count: interviewsCount } = await supabase
         .from('interviews')
         .select(`
@@ -113,10 +115,24 @@ export default function DashboardPage() {
         .order('created_at', { ascending: false })
         .range((interviewsPage - 1) * ITEMS_PER_PAGE, interviewsPage * ITEMS_PER_PAGE - 1)
 
+      // Fetch ALL interview statuses for accurate stats (not paginated)
+      const { data: allInterviewStatuses } = await supabase
+        .from('interviews')
+        .select('status')
+        .eq('org_id', profile.org_id)
+
+      // Calculate stats from all interviews
+      const completed = allInterviewStatuses?.filter(i =>
+        i.status === 'completed' || i.status === 'progressed' || i.status === 'rejected'
+      ).length || 0
+      const inProgress = allInterviewStatuses?.filter(i => i.status === 'in_progress').length || 0
+
       setRoles(rolesData || [])
       setInterviews((interviewsData as any) || [])
       setTotalRoles(rolesCount || 0)
       setTotalInterviews(interviewsCount || 0)
+      setCompletedCount(completed)
+      setInProgressCount(inProgress)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -160,8 +176,6 @@ export default function DashboardPage() {
   const totalInterviewsPages = Math.ceil(totalInterviews / ITEMS_PER_PAGE)
 
   // Calculate stats
-  const completedInterviews = interviews.filter(i => i.status === 'completed').length
-  const inProgressInterviews = interviews.filter(i => i.status === 'in_progress').length
   const activeRoles = roles.filter(r => r.status === 'active').length
 
   return (
@@ -195,14 +209,14 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Completed"
-            value={completedInterviews}
+            value={completedCount}
             icon={CheckCircle}
             description="Finished interviews"
             gradient="emerald"
           />
           <StatCard
             title="In Progress"
-            value={inProgressInterviews}
+            value={inProgressCount}
             icon={TrendingUp}
             description="Ongoing interviews"
             gradient="cyan"
