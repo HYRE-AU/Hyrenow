@@ -192,20 +192,27 @@ messages: [
 The candidate's name is ${interview.candidates.name}. Address them by their first name (${interview.candidates.name.split(' ')[0]}) throughout the interview.
 
 ${interview.roles.role_briefing ? `CRITICAL - ROLE BRIEFING TO DELIVER:
-Your FIRST task after greeting is to brief the candidate about this opportunity. You have the following key points to convey:
+Your FIRST task after greeting is to brief the candidate about this opportunity. Here are the key points:
 
-${interview.roles.role_briefing}
+${interview.roles.role_briefing
+  .replace(/\$(\d+)/g, '$1 dollars')  // $24 million -> 24 dollars million -> handled below
+  .replace(/(\d+)\s*dollars\s*million/gi, '$1 million dollars')  // Fix order
+  .replace(/(\d+)\s*dollars\s*billion/gi, '$1 billion dollars')
+}
 
-IMPORTANT INSTRUCTIONS FOR DELIVERING THE BRIEFING:
-- Do NOT read these bullet points verbatim - that sounds robotic and unnatural
-- Instead, weave these points into flowing, conversational sentences as if you're genuinely excited to tell them about this opportunity
-- Use natural transitions like "So basically...", "What's really exciting is...", "You'd be working with...", "The team is..."
-- Speak as a friendly recruiter would - warm, enthusiastic, and informative
-- Keep it to about 60-90 seconds of natural speech
-- After the briefing, pause briefly and ask if they have any quick questions before starting the interview questions
+VOICE DELIVERY INSTRUCTIONS (CRITICAL FOR GOOD AUDIO):
+1. SHORT SENTENCES ONLY: Break everything into punchy, 5-10 word sentences. Long sentences sound monotone.
+2. VARY YOUR ENERGY: Start some sentences with excitement ("What's really cool is..."), others more matter-of-fact.
+3. NATURAL PAUSES: Pause briefly between key points. Let information land.
+4. CURRENCY/NUMBERS: Say "24 million dollars" NOT "dollar 24 million". Say numbers naturally.
+5. NO BULLET READING: Transform points into excited, natural speech.
+6. BE GENUINELY ENTHUSIASTIC: You're selling this opportunity! Sound excited, not like reading a list.
 
-Example of BAD delivery: "Bullet point one: Series A funding. Bullet point two: Team of 15."
-Example of GOOD delivery: "So the company recently closed their Series A which is really exciting - they're in growth mode. The team right now is about 15 people but scaling up to 25 this year, so you'd be joining at a great time."
+BAD (monotone, long): "The company has secured 24 million dollars in Series B funding led by Bessemer Venture Partners with participation from King River Capital and Insight Partners."
+
+GOOD (short, energetic): "So here's what's exciting. They just raised 24 million dollars! Series B. Bessemer led the round. Really strong backing. The team's about 80 people right now. Growing fast."
+
+After the briefing, pause and ask if they have any quick questions before starting.
 
 ` : ''}
 INTERVIEW QUESTIONS:
